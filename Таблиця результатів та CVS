@@ -1,0 +1,49 @@
+// ════════════════════════════════════════════════════════════════
+//  ТАБЛИЦЯ РЕЗУЛЬТАТІВ ТА CSV
+// ════════════════════════════════════════════════════════════════
+
+function updateResultsTable() {
+  if (!allResults.length) return;
+  document.getElementById('rtb').innerHTML = allResults.map(r => `
+    <tr>
+      <td><strong>${r.scenario}</strong></td>
+      <td>${r.genToTarget}</td>
+      <td>${r.avgPval}</td>
+      <td>${r.finalH}</td>
+      <td>${r.finalF}</td>
+      <td style="color:var(--a2)">${r.duration || '—'}</td>
+      <td><code style="font-size:9px;letter-spacing:.5px;color:var(--a2);cursor:pointer"
+                onclick="navigator.clipboard&&navigator.clipboard.writeText('${r.hexKey}')"
+                title="Натисніть щоб скопіювати">${r.hexKey ? r.hexKey.match(/.{1,8}/g).join(' ') : '—'}</code></td>
+      <td><span class="bk ${r.reached ? 'bkg' : 'bkr'}">
+        ${r.reached ? '&#10003; Досягнуто' : '&#10005; Не досягнуто'}</span></td>
+    </tr>`).join('');
+
+  // Show CSV preview for the most recent run
+  const lastRun = allResults[allResults.length - 1];
+  const src = lastRun.csvSnapshot || csvRows;
+  const preview = src.slice(0, 9).map(r => r.join(';')).join('\n') + (src.length > 9 ? '\n...' : '');
+  document.getElementById('csvPr').textContent =
+    '// Останній запуск: ' + lastRun.scenario + '\n' + preview;
+}
+
+function dlCSV() {
+  // Use snapshot from last completed run if available, fall back to module-level csvRows
+  const src = (allResults.length && allResults[allResults.length - 1].csvSnapshot)
+    ? allResults[allResults.length - 1].csvSnapshot
+    : csvRows;
+  if (!src.length || (src.length === 1 && src[0][0] === 'Generation')) {
+    showMsg('Дані CSV відсутні. Запустіть ГА для отримання результатів.', 'warn');
+    return;
+  }
+  const content = src.map(r => r.join(';')).join('\n');
+  const blob = new Blob(['\uFEFF' + content], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = 'crypto_results.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 150);
+}
