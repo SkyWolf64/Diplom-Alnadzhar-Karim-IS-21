@@ -1,0 +1,136 @@
+<!-- ══════════════════ ПРО СИСТЕМУ ══════════════════ -->
+<div class="tp" id="ti">
+
+  <div class="sec">Про систему</div>
+  <div class="card" style="margin-bottom:14px;font-size:11px;line-height:1.9;color:var(--txt)">
+    <strong style="color:var(--a2);font-size:12px">Crypto Analyzer — AES-128 + Генетичний алгоритм</strong><br><br>
+    Програмна система для дослідження якості шифрування на основі повного алгоритму AES-128 (FIPS 197)
+    з оптимізацією ключа методом генетичного алгоритму. Реалізована у двох варіантах:<br><br>
+    <strong style="color:var(--grn)">Web-інтерфейс (HTML + Vanilla JS)</strong> — інтерактивна демонстрація в браузері:
+    шифрування/дешифрування, частотний аналіз, графіки, порівняльна таблиця, завантаження файлів.<br><br>
+    <strong style="color:var(--grn)">C++ Backend (C++17)</strong> — консольна реалізація з повним AES-128, ГА та експортом CSV.
+    Компілюється без попереджень: <code style="background:var(--surf);padding:1px 6px;border-radius:3px;color:var(--a2);font-size:10px">g++ -O2 -std=c++17 -Wall -Wextra -Wpedantic</code>
+  </div>
+
+  <div class="sec" style="margin-top:10px">Повний AES-128 (FIPS 197)</div>
+  <div class="card" style="margin-bottom:14px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:11px">
+      <div>
+        <div style="color:var(--a2);font-weight:700;margin-bottom:8px">Шифрування (encrypt_block)</div>
+        <div style="color:#94a3b8;line-height:1.8">
+          <span style="color:var(--grn)">①</span> Початковий раунд: AddRoundKey(w[0])<br>
+          <span style="color:var(--grn)">②</span> Раунди 1–9: SubBytes → ShiftRows → MixColumns → AddRoundKey<br>
+          <span style="color:var(--grn)">③</span> Раунд 10: SubBytes → ShiftRows → AddRoundKey<br>
+          <span style="color:var(--mut);font-size:10px">(без MixColumns, FIPS 197 §5.1)</span>
+        </div>
+      </div>
+      <div>
+        <div style="color:var(--red);font-weight:700;margin-bottom:8px">Дешифрування (decrypt_block)</div>
+        <div style="color:#94a3b8;line-height:1.8">
+          <span style="color:var(--red)">①</span> Початковий раунд: AddRoundKey(w[10])<br>
+          <span style="color:var(--red)">②</span> Раунди 9–1: InvShiftRows → InvSubBytes → AddRoundKey → InvMixColumns<br>
+          <span style="color:var(--red)">③</span> Раунд 0: InvShiftRows → InvSubBytes → AddRoundKey<br>
+          <span style="color:var(--mut);font-size:10px">(GF(2⁸): gmul9, gmul11, gmul13, gmul14)</span>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--brd);font-size:11px;color:#94a3b8;line-height:1.8">
+      <strong style="color:var(--txt)">Key Expansion:</strong> 128-біт → 11 раундових ключів (RotWord + SubWord + RCON, FIPS 197 §5.2)<br>
+      <strong style="color:var(--txt)">S-box:</strong> 256-байтні таблиці пряма + зворотна (FIPS 197 Table 4)<br>
+      <strong style="color:var(--txt)">Режим:</strong> ECB — кожен 128-бітний блок шифрується незалежно<br>
+      <strong style="color:var(--txt)">Self-test:</strong> автоматична верифікація encrypt→decrypt=original після кожного запуску C++<br>
+      <strong style="color:var(--txt)">Завантаження файлів:</strong> .txt .csv .md .json .cpp (пряме читання), .docx (mammoth.js), .pdf (pdf.js)
+    </div>
+  </div>
+
+  <div class="sec" style="margin-top:10px">Фітнес-функція та статистика</div>
+  <div class="card" style="margin-bottom:14px;font-size:11px;line-height:1.9;color:var(--txt)">
+    <strong style="color:var(--a2);font-size:12px">F(X) = w₁ · H<sub>norm</sub> + w₂ · P-value</strong>
+    &nbsp;&nbsp;<span style="color:var(--mut)">(w₁ + w₂ = 1.0, F(X) ∈ [0, 1])</span><br><br>
+    <strong>H<sub>norm</sub></strong> — нормалізована ентропія Шеннона:
+    <code style="background:var(--surf);padding:1px 6px;border-radius:3px;color:var(--grn);font-size:10px">H = −Σ pᵢ·log₂(pᵢ) / 8</code>
+    де 8 = log₂(256). H = 1.0 → рівномірний розподіл байтів.<br>
+    <strong>P-value</strong> — тест χ² Пірсона (NIST SP 800-22, df=255):
+    <code style="background:var(--surf);padding:1px 6px;border-radius:3px;color:var(--grn);font-size:10px">χ² = Σ(Oᵢ−E)²/E</code>
+    апроксимація Вілсона–Хілферті, похибка &lt; 0.001 при df=255.<br><br>
+    <div style="background:var(--surf);border-radius:6px;padding:10px 12px;border-left:3px solid var(--a2)">
+      <strong style="color:var(--a2)">Три сценарії:</strong><br>
+      <strong style="color:var(--txt)">A</strong> w₁=0.7, w₂=0.3 — пріоритет ентропії (~45 поколінь до F≥0.8)<br>
+      <strong style="color:var(--txt)">B</strong> w₁=0.5, w₂=0.5 — збалансований ★ (~32 покоління) <strong style="color:var(--a2)">рекомендований</strong><br>
+      <strong style="color:var(--txt)">C</strong> w₁=0.4, w₂=0.6 — пріоритет P-value (~24 покоління)
+    </div>
+  </div>
+
+  <div class="sec" style="margin-top:10px">Генетичний алгоритм</div>
+  <div class="card" style="margin-bottom:14px">
+    <table style="width:100%;border-collapse:collapse;font-size:11px">
+      <tr style="border-bottom:1px solid var(--brd)"><td style="padding:6px 8px;color:var(--a2);font-weight:700;white-space:nowrap;width:120px">Хромосома</td><td style="padding:6px 8px;color:#94a3b8">16 байт (128 біт) — AES-128 ключ, <code style="background:var(--surf);padding:1px 4px;border-radius:3px;color:var(--grn)">vector&lt;uint8_t&gt;</code></td></tr>
+      <tr style="border-bottom:1px solid var(--brd)"><td style="padding:6px 8px;color:var(--a2);font-weight:700">Ініціалізація</td><td style="padding:6px 8px;color:#94a3b8">Рівномірна випадкова: <code style="background:var(--surf);padding:1px 4px;border-radius:3px;color:var(--grn)">std::mt19937</code> (C++, seed=42) / <code style="background:var(--surf);padding:1px 4px;border-radius:3px;color:var(--grn)">crypto.getRandomValues</code> (JS)</td></tr>
+      <tr style="border-bottom:1px solid var(--brd)"><td style="padding:6px 8px;color:var(--a2);font-weight:700">Селекція</td><td style="padding:6px 8px;color:#94a3b8">Турнірна (k=3): з 3 випадкових особин обирається та з найвищим F(X)</td></tr>
+      <tr style="border-bottom:1px solid var(--brd)"><td style="padding:6px 8px;color:var(--a2);font-weight:700">Кросинговер</td><td style="padding:6px 8px;color:#94a3b8">Гібридний: 70% двоточковий (обмін сегментом) + 30% одноточковий (обмін хвостами)</td></tr>
+      <tr style="border-bottom:1px solid var(--brd)"><td style="padding:6px 8px;color:var(--a2);font-weight:700">Мутація</td><td style="padding:6px 8px;color:#94a3b8">Побайтова заміна на випадкове [0,255] з імовірністю mutRate (за замовч. 5%)</td></tr>
+      <tr style="border-bottom:1px solid var(--brd)"><td style="padding:6px 8px;color:var(--a2);font-weight:700">Елітизм</td><td style="padding:6px 8px;color:#94a3b8">Топ-2 особини переходять без змін (збереження кращих рішень)</td></tr>
+      <tr><td style="padding:6px 8px;color:var(--a2);font-weight:700">Зупинка</td><td style="padding:6px 8px;color:#94a3b8">F(X) ≥ 0.80 або вичерпання maxGen. Параметри: популяція 200, покоління 100–500</td></tr>
+    </table>
+  </div>
+
+  <div class="sec" style="margin-top:10px">Технічний стек та статистика</div>
+  <div class="card" style="margin-bottom:14px">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;font-size:11px;margin-bottom:12px">
+      <div>
+        <div style="color:var(--a2);font-weight:700;margin-bottom:8px">C++ Backend</div>
+        <div style="color:#94a3b8;line-height:1.9">
+          Стандарт: <strong style="color:var(--txt)">C++17</strong> · GCC / Clang / MSVC<br>
+          Прапори: <code style="background:var(--surf);padding:1px 4px;border-radius:3px;color:var(--grn);font-size:9px">-O2 -Wall -Wextra -Wpedantic</code><br>
+          Бібліотеки: iostream, vector, cmath, algorithm,<br>iomanip, string, random, fstream<br>
+          Генератор: <code style="background:var(--surf);padding:1px 4px;border-radius:3px;color:var(--grn);font-size:9px">std::mt19937</code> (Mersenne Twister)<br>
+          Вивід: CSV для Excel + cerr статус
+        </div>
+      </div>
+      <div>
+        <div style="color:var(--grn);font-weight:700;margin-bottom:8px">Web Frontend (JS)</div>
+        <div style="color:#94a3b8;line-height:1.9">
+          <strong style="color:var(--txt)">Vanilla JS</strong> (без фреймворків)<br>
+          Графіки: <strong style="color:var(--txt)">Chart.js</strong> (bar + line)<br>
+          Canvas: власний рендер збіжності<br>
+          Файли: mammoth.js (.docx) + pdf.js (.pdf)<br>
+          Crypto: <code style="background:var(--surf);padding:1px 4px;border-radius:3px;color:var(--grn);font-size:9px">crypto.getRandomValues</code><br>
+          AES: повна паралельна реалізація (JS = C++)
+        </div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center;font-size:11px">
+      <div style="background:var(--surf);border-radius:6px;padding:10px;border:1px solid var(--brd)">
+        <div style="font-size:20px;font-weight:700;color:var(--a2)">65</div>
+        <div style="color:var(--mut);font-size:10px;margin-top:3px">JS функцій</div>
+      </div>
+      <div style="background:var(--surf);border-radius:6px;padding:10px;border:1px solid var(--brd)">
+        <div style="font-size:20px;font-weight:700;color:var(--grn)">536</div>
+        <div style="color:var(--mut);font-size:10px;margin-top:3px">рядків C++</div>
+      </div>
+      <div style="background:var(--surf);border-radius:6px;padding:10px;border:1px solid var(--brd)">
+        <div style="font-size:20px;font-weight:700;color:var(--a2)">256×2</div>
+        <div style="color:var(--mut);font-size:10px;margin-top:3px">S-box FIPS 197</div>
+      </div>
+      <div style="background:var(--surf);border-radius:6px;padding:10px;border:1px solid var(--brd)">
+        <div style="font-size:20px;font-weight:700;color:var(--red)">10</div>
+        <div style="color:var(--mut);font-size:10px;margin-top:3px">раундів AES</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec" style="margin-top:10px">Експериментальні дослідження</div>
+  <div class="card" style="font-size:11px;line-height:1.9;color:#94a3b8">
+    <strong style="color:var(--txt)">Мета:</strong> порівняти три сценарії за швидкістю збіжності, якістю шифрування та часом виконання.<br>
+    <strong style="color:var(--txt)">Вхідні дані:</strong> природній текст, програмний код, псевдовипадкові дані (≥ 500 байт)<br>
+    <strong style="color:var(--txt)">Параметри:</strong> популяція 200, до 500 поколінь, мутація 5%, ціль F(X) ≥ 0.80<br>
+    <strong style="color:var(--txt)">Верифікація:</strong> self-test encrypt→decrypt=original у C++; дешифрація у Web-інтерфейсі<br><br>
+    <div style="background:var(--surf);border-radius:6px;padding:10px 12px;border-left:3px solid var(--grn)">
+      <strong style="color:var(--grn)">Очікувані результати (популяція 200, input ≥ 500 байт):</strong><br>
+      <strong style="color:var(--txt)">A</strong> (0.7/0.3): ~45 поколінь · H ≈ 0.96 · P ≈ 0.82<br>
+      <strong style="color:var(--txt)">B</strong> (0.5/0.5): ~32 покоління · H ≈ 0.97 · P ≈ 0.88 &nbsp;<strong style="color:var(--a2)">★ рекомендований</strong><br>
+      <strong style="color:var(--txt)">C</strong> (0.4/0.6): ~24 покоління · H ≈ 0.96 · P ≈ 0.94
+    </div>
+  </div>
+
+</div>
