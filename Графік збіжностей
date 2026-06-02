@@ -1,0 +1,126 @@
+// ════════════════════════════════════════════════════════════════
+//  CANVAS ГРАФІК ЗБІЖНОСТІ
+// ════════════════════════════════════════════════════════════════
+
+function drawChart(fitHistory, Hhist, Phist, targetLine) {
+  const canvas = document.getElementById('cv');
+  if (!canvas) return;
+
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  const W   = (rect.width > 0 ? rect.width : (canvas.offsetWidth || 600));
+  const H   = 250;
+
+  canvas.width  = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.height = H + 'px';
+  ctx.scale(dpr, dpr);
+
+  const pad = { t: 22, r: 20, b: 36, l: 48 };
+  const cw  = W - pad.l - pad.r;
+  const ch  = H - pad.t - pad.b;
+  const n   = fitHistory.length;
+
+  // Background
+  ctx.fillStyle = '#161b2e';
+  ctx.fillRect(0, 0, W, H);
+
+  // Grid lines + Y labels
+  ctx.strokeStyle = 'rgba(30,42,74,.85)';
+  ctx.lineWidth = 1;
+  for (let y = 0; y <= 4; y++) {
+    const yy = pad.t + ch * (1 - y/4);
+    ctx.beginPath(); ctx.moveTo(pad.l, yy); ctx.lineTo(pad.l + cw, yy); ctx.stroke();
+    ctx.fillStyle = '#475569';
+    ctx.font = '10px JetBrains Mono, monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText((y * 0.25).toFixed(2), pad.l - 4, yy + 3);
+  }
+
+  // Target line
+  if (targetLine > 0 && targetLine <= 1) {
+    const ty = pad.t + ch * (1 - targetLine);
+    ctx.strokeStyle = 'rgba(239,68,68,.4)';
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(pad.l, ty); ctx.lineTo(pad.l + cw, ty); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#ef4444';
+    ctx.font = '9px JetBrains Mono, monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('Ціль ' + targetLine.toFixed(2), pad.l + 2, ty - 3);
+  }
+
+  // Draw a metric line
+  function drawLine(vals, color, label, lx, ly) {
+    if (!vals.length) return;
+    ctx.strokeStyle = color;
+    ctx.lineWidth   = 2;
+    ctx.shadowColor = color;
+    ctx.shadowBlur  = 5;
+    ctx.beginPath();
+    vals.forEach((v, i) => {
+      const x = pad.l + (i / Math.max(n - 1, 1)) * cw;
+      const y = pad.t + ch * (1 - Math.max(0, Math.min(1, v)));
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    // Legend dot + label
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(lx + 6, ly, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.font = '10px JetBrains Mono, monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText(label, lx + 14, ly + 3);
+  }
+
+  drawLine(fitHistory, '#3b82f6', 'F(X)', pad.l,      pad.t - 5);
+  drawLine(Hhist,      '#22d3ee', 'H',    pad.l + 65,  pad.t - 5);
+  drawLine(Phist,      '#f59e0b', 'P',    pad.l + 110, pad.t - 5);
+
+  // X-axis labels
+  ctx.fillStyle = '#475569';
+  ctx.font = '10px JetBrains Mono, monospace';
+  ctx.textAlign = 'center';
+  const steps = Math.min(8, n - 1);
+  if (steps > 0) {
+    for (let i = 0; i <= steps; i++) {
+      const gi = Math.round(i * (n - 1) / steps);
+      const x  = pad.l + (gi / Math.max(n - 1, 1)) * cw;
+      ctx.fillText(gi, x, H - 5);
+    }
+  } else if (n === 1) {
+    ctx.fillText('0', pad.l, H - 5);
+  }
+
+  // Синхронізуємо Chart.js convergenceChart на вкладці Результати
+  if (n > 0 && fitHistory.length > 0) {
+    const labels = fitHistory.map((_, i) => i);
+    if (cChart) {
+      cChart.data.labels = labels;
+      cChart.data.datasets[0].data = fitHistory;
+      cChart.update('none');
+    } else {
+      // Ініціалізуємо якщо ще не створено
+      const ctxC = document.getElementById('convergenceChart');
+      if (ctxC) {
+        const trPanel = document.getElementById('tr');
+        const wasHidden = trPanel && !trPanel.classList.contains('on');
+        if (wasHidden) trPanel.style.display = 'block';
+        cChart = new Chart(ctxC.getContext('2d'), {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [{ label: 'Fitness', data: fitHistory, borderColor: '#10b981',
+              borderWidth: 2, pointRadius: 0, fill: true,
+              backgroundColor: 'rgba(16,185,129,0.1)' }]
+          },
+          options: { responsive: true, animation: false, plugins: { legend: { display: false } } }
+        });
+        if (wasHidden) trPanel.style.display = '';
+      }
+    }
+  }
+}
