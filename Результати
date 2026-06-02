@@ -1,0 +1,91 @@
+<!-- ══════════════════ РЕЗУЛЬТАТИ ══════════════════ -->
+<div class="tp" id="tr">
+  <div class="sec">Порівняльна таблиця сценаріїв</div>
+  <div class="card">
+    <div style="display:flex;justify-content:flex-end;margin-bottom:10px">
+      <button class="btn bs" onclick="clearResults()" style="font-size:10px">&#128465; Очистити таблицю</button>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Сценарій (ваги)</th>
+          <th>Поколінь до F(X) &ge; 0.9</th>
+          <th>Середній P-value</th>
+          <th>Фінальна ентропія</th>
+          <th>Фінальний F(X)</th>
+          <th>Час (сек)</th>
+          <th>Key (HEX)</th>
+          <th>Статус</th>
+        </tr>
+      </thead>
+      <tbody id="rtb">
+        <tr><td colspan="8" style="text-align:center;color:var(--mut);padding:28px">
+          Запустіть хоча б один сценарій для відображення результатів
+        </td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ── Графіки (Chart.js) ── -->
+  <div class="sec" style="margin-top:18px">Гістограма частот та показник придатності ключа</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px">
+    <div class="stat-card">
+      <h3 style="font-size:11px;color:#3b82f6;margin-bottom:8px">Гістограма частот</h3>
+      <canvas id="freqChart" height="200"></canvas>
+      <p style="font-size:0.8rem;color:#94a3b8;margin-top:10px">
+        Розподіл байтів: синій (вхід) vs червоний (шифр)
+      </p>
+    </div>
+    <div class="stat-card">
+      <h3 style="font-size:11px;color:#10b981;margin-bottom:8px">Показник придатності ключа</h3>
+      <canvas id="convergenceChart" height="200"></canvas>
+      <p style="font-size:0.8rem;color:#94a3b8;margin-top:10px">
+        Зміна цільової функції Fitness в процесі еволюції
+      </p>
+    </div>
+  </div>
+  <div style="margin-bottom:18px">
+    <button class="btn bs" onclick="dlSourceCSVChart()" style="font-size:10px">
+      &#128190; Завантажити статистику вхідних частот (CSV)
+    </button>
+  </div>
+
+  <div class="sec" style="margin-top:18px">Дані CSV для Excel</div>
+  <div class="card">
+    <div style="font-size:10px;color:var(--mut);margin-bottom:8px">
+      Формат: Generation;Fitness;Entropy;PValue (роздільник ;, сумісно з Excel)
+    </div>
+    <pre id="csvPr" style="font-size:10px;color:var(--txt);margin-bottom:14px;max-height:150px;overflow-y:auto;background:var(--surf);padding:10px;border-radius:4px">— запустіть аналіз для отримання даних —</pre>
+    <button class="btn bs" onclick="dlCSV()">&#8595; Завантажити CSV</button>
+    <button class="btn bs" onclick="dlSourceCSV()" style="margin-left:8px">&#8595; CSV відкритого тексту</button>
+    <button class="btn bs" onclick="testAvalanche()" style="margin-left:8px;border-color:var(--a2);color:var(--a2)">&#9889; Test Avalanche</button>
+  </div>
+</div>
+
+<!-- ══════════════════ C++ КОД ══════════════════ -->
+<div class="tp" id="tc">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+    <div class="sec" style="margin-bottom:0;flex:1">Повний C++ код (crypto_analyzer.cpp)</div>
+    <button class="btn bs" id="btnCopy" onclick="copyCpp()">&#128203; Копіювати C++</button>
+  </div>
+  <div id="cppOk" style="display:none;color:var(--grn);font-size:11px;margin-bottom:10px;padding:8px 12px;background:rgba(34,211,238,.08);border-radius:4px;border:1px solid rgba(34,211,238,.3)">
+    &#10003; Скопійовано в буфер! Вставте у Notepad++ (Ctrl+V) та збережіть як crypto_analyzer.cpp
+  </div>
+
+  <div class="card" style="padding:11px;font-size:11px;line-height:2;color:var(--txt);margin-bottom:16px">
+    <strong style="color:var(--a2)">Компіляція та запуск (Notepad++ &rarr; Plugins &rarr; NppExec або Run &rarr; cmd):</strong>
+    <code style="display:block;margin:8px 0;padding:12px;background:var(--surf);border-radius:4px;color:var(--grn);line-height:1.9">g++ -O2 -std=c++17 -o crypto_analyzer crypto_analyzer.cpp<br>
+crypto_analyzer.exe input.txt 1 seriesA.csv<br>
+crypto_analyzer.exe input.txt 2 seriesB.csv<br>
+crypto_analyzer.exe input.txt 3 seriesC.csv</code>
+    Відкрийте seriesA/B/C.csv у Excel → виберіть колонку Fitness → вставте лінійний графік.
+  </div>
+
+  <div class="cpp-box">
+    <div class="cpp-hdr">
+      <span>C++ &middot; crypto_analyzer.cpp &middot; g++ -O2 -std=c++17</span>
+      <span style="color:var(--mut);font-size:9px">~375 рядків</span>
+    </div>
+    <pre class="cpp-code" id="cppSrc">Завантаження...</pre>
+  </div>
+</div>
