@@ -1,0 +1,62 @@
+// ════════════════════════════════════════════════════════════════
+//  СТАН ДОДАТКУ
+// ════════════════════════════════════════════════════════════════
+let W1 = 0.5, W2 = 0.5, SC = 2;
+let running = false, stopFlag = false;
+let allResults = [], csvRows = [];
+
+// ──── Зразки датасетів ────
+const SAMPLES = {
+  text: [
+    'Ентропія Шеннона вимірює ступінь невизначеності інформації в наборі даних.',
+    'Формула: H = -sum(p_i * log2(p_i)), де p_i — ймовірність кожного символу.',
+    'Для рівномірного розподілу 256 байтових значень ентропія максимальна (H=8 біт).',
+    'Криптографічне шифрування повинне наближати ентропію вихідного потоку до максимуму.',
+    'Shannon entropy measures the uncertainty of information in a dataset.',
+    'The chi-squared test checks uniformity of byte frequency distribution.',
+    'A genetic algorithm optimizes parameters through selection, crossover, and mutation.',
+    'XOR cipher with random key increases byte distribution uniformity significantly.',
+    'NIST SP 800-22 provides statistical tests for cryptographic random number generators.',
+    'The fitness function F(X) = w1*H_norm + w2*P_value guides the optimization process.'
+  ].join(' '),
+
+  code: [
+    '#include <iostream>',
+    '#include <vector>',
+    '#include <cmath>',
+    'using namespace std;',
+    'double entropy(const vector<int>& freq, int n) {',
+    '    double H = 0.0;',
+    '    for (int f : freq)',
+    '        if (f > 0) { double p = (double)f/n; H -= p*log2(p); }',
+    '    return H / 8.0;  // normalize: max = log2(256) = 8',
+    '}',
+    '// JSON test data: {"w1": 0.4, "w2": 0.6, "keyLen": 16}',
+    '// {"scenario": "C", "target": 0.90, "popSize": 50}',
+    '// Chi-squared: sum((observed - expected)^2 / expected)',
+    '// Expected = total / 256 for uniform byte distribution',
+    'int main() { return 0; }'
+  ].join('\n'),
+
+  rand: (() => {
+    // Псевдовипадковий текст на основі seeded LCG для відтворюваності
+    let s = '', a = 1664525, c = 1013904223, m = 2**32, seed = 12345;
+    for (let i = 0; i < 800; i++) {
+      seed = (a * seed + c) % m;
+      s += String.fromCharCode(33 + (seed % 94)); // printable ASCII
+    }
+    return s;
+  })(),
+
+  comp: (() => {
+    // Дані з високою початковою ентропією (base64-like)
+    const b = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=!@#$%^&*()';
+    let s = '', seed = 98765;
+    const a = 1664525, c = 1013904223, m = 2**32;
+    for (let i = 0; i < 700; i++) {
+      seed = (a * seed + c) % m;
+      s += b[seed % b.length];
+    }
+    return s;
+  })()
+};
