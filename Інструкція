@@ -1,0 +1,148 @@
+<!-- ══════════════════ ІНСТРУКЦІЯ ══════════════════ -->
+<div class="tp" id="th">
+
+  <div class="sec">⚡ Швидкий старт — 3 кроки</div>
+  <div class="card" style="margin-bottom:14px">
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">
+      <div style="background:var(--surf);border-radius:8px;padding:14px;border:1px solid rgba(59,130,246,.3);text-align:center">
+        <div style="font-size:26px;margin-bottom:6px">📝</div>
+        <div style="font-size:11px;font-weight:700;color:var(--a2);margin-bottom:5px">КРОК 1 — ТЕКСТ</div>
+        <div style="font-size:11px;color:#94a3b8;line-height:1.6">Вставте текст, відкрийте файл (<strong>.txt .docx .pdf</strong>), або натисніть кнопку зразка</div>
+      </div>
+      <div style="background:var(--surf);border-radius:8px;padding:14px;border:1px solid rgba(16,185,129,.3);text-align:center">
+        <div style="font-size:26px;margin-bottom:6px">▶️</div>
+        <div style="font-size:11px;font-weight:700;color:var(--grn);margin-bottom:5px">КРОК 2 — ГА</div>
+        <div style="font-size:11px;color:#94a3b8;line-height:1.6">Оберіть сценарій <strong>B ★</strong>, натисніть <strong style="color:var(--grn)">«▶ ЗАПУСТИТИ ГА»</strong>, зачекайте завершення</div>
+      </div>
+      <div style="background:var(--surf);border-radius:8px;padding:14px;border:1px solid rgba(239,68,68,.3);text-align:center">
+        <div style="font-size:26px;margin-bottom:6px">🔓</div>
+        <div style="font-size:11px;font-weight:700;color:var(--red);margin-bottom:5px">КРОК 3 — ПЕРЕВІРКА</div>
+        <div style="font-size:11px;color:#94a3b8;line-height:1.6">Блок дешифрації: <strong style="color:var(--red)">«Ключ з ГА»</strong> + <strong style="color:var(--red)">«Шифр з аналізу»</strong> + <strong style="color:var(--red)">«🔓 Дешифрувати»</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sec" style="margin-top:10px">📂 Завантаження вхідних даних</div>
+  <div class="card" style="margin-bottom:14px">
+    <table style="width:100%;border-collapse:collapse;font-size:11px">
+      <tr style="border-bottom:1px solid var(--brd)">
+        <td style="padding:7px 8px;color:var(--a2);font-weight:700;white-space:nowrap;width:130px">Вставка (Ctrl+V)</td>
+        <td style="padding:7px 8px;color:#94a3b8">Скопіюйте текст з будь-якого джерела і вставте у велике поле. Найпростіший спосіб.</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--brd)">
+        <td style="padding:7px 8px;color:var(--a2);font-weight:700">📂 Відкрити файл</td>
+        <td style="padding:7px 8px;color:#94a3b8">
+          Кнопка поруч з «Очистити». Підтримувані формати:<br>
+          <span style="color:var(--grn)">●</span> <strong style="color:var(--txt)">.txt .csv .md .json .js .cpp</strong> — читаються миттєво<br>
+          <span style="color:var(--a2)">●</span> <strong style="color:var(--txt)">.docx (Word)</strong> — витягується чистий текст через mammoth.js (потрібен інтернет)<br>
+          <span style="color:var(--red)">●</span> <strong style="color:var(--txt)">.pdf</strong> — витягується текст з усіх сторінок через pdf.js (потрібен інтернет)
+        </td>
+      </tr>
+      <tr>
+        <td style="padding:7px 8px;color:var(--a2);font-weight:700">Зразки датасетів</td>
+        <td style="padding:7px 8px;color:#94a3b8">4 вбудовані зразки: <span style="color:var(--grn)">ТЕКСТ</span> (Wikipedia-стиль) · <span style="color:var(--grn)">КОД</span> (C++/JSON) · <span style="color:var(--grn)">ПСЕВДОВИПАДКОВИЙ</span> · <span style="color:var(--grn)">ВИСОКА ПОЧАТКОВА ЕНТРОПІЯ</span></td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="sec" style="margin-top:10px">🔐 Шифрування покроково</div>
+  <div class="card" style="margin-bottom:14px">
+    <table style="width:100%;border-collapse:collapse;font-size:11px">
+      <tr style="border-bottom:1px solid var(--brd)"><td style="padding:7px 8px;color:var(--a2);font-weight:700;width:28px">01</td><td style="padding:7px 8px;color:var(--txt);font-weight:700;width:150px">Вхідні дані</td><td style="padding:7px 8px;color:#94a3b8;line-height:1.6">Вставте текст або відкрийте файл. Мінімум 500 байт для стабільних результатів ГА. Лічильник байтів відображається під полем.</td></tr>
+      <tr style="border-bottom:1px solid var(--brd)"><td style="padding:7px 8px;color:var(--a2);font-weight:700">02</td><td style="padding:7px 8px;color:var(--txt);font-weight:700">Сценарій</td><td style="padding:7px 8px;color:#94a3b8;line-height:1.6">Оберіть <strong>A</strong> (0.7/0.3), <strong>B</strong> (0.5/0.5 ★), <strong>C</strong> (0.4/0.6) або <strong>Власний</strong>. Сценарій B рекомендується як збалансований.</td></tr>
+      <tr style="border-bottom:1px solid var(--brd)"><td style="padding:7px 8px;color:var(--a2);font-weight:700">03</td><td style="padding:7px 8px;color:var(--txt);font-weight:700">Параметри ГА</td><td style="padding:7px 8px;color:#94a3b8;line-height:1.6"><strong>Популяція</strong> 200 · <strong>Покоління</strong> 100–500 · <strong>Ціль F(X)</strong> 0.80 · <strong>Мутація</strong> 5%. Більша популяція = точніше, але повільніше.</td></tr>
+      <tr style="border-bottom:1px solid var(--brd)"><td style="padding:7px 8px;color:var(--grn);font-weight:700">04</td><td style="padding:7px 8px;color:var(--txt);font-weight:700">Запуск</td><td style="padding:7px 8px;color:#94a3b8;line-height:1.6">Натисніть <strong style="color:var(--grn)">«▶ ЗАПУСТИТИ ГА»</strong>. Спостерігайте графік збіжності, метрики F(X)/H/P та лог у реальному часі.</td></tr>
+      <tr><td style="padding:7px 8px;color:var(--a2);font-weight:700">05</td><td style="padding:7px 8px;color:var(--txt);font-weight:700">Результат</td><td style="padding:7px 8px;color:#94a3b8;line-height:1.6">У лозі: <span style="color:var(--a2)">«Найкращий ключ: XXXX...»</span>. На вкладці <strong>Результати</strong> — порівняльна таблиця всіх запусків з часом виконання.</td></tr>
+    </table>
+  </div>
+
+  <div class="sec" style="margin-top:10px">🔓 Дешифрація покроково</div>
+  <div class="card" style="margin-bottom:14px">
+    <table style="width:100%;border-collapse:collapse;font-size:11px">
+      <tr style="border-bottom:1px solid var(--brd)"><td style="padding:7px 8px;color:var(--a2);font-weight:700;width:28px">01</td><td style="padding:7px 8px;color:var(--txt);font-weight:700;width:150px">Шифротекст</td><td style="padding:7px 8px;color:#94a3b8;line-height:1.6">Після ГА у блоці <strong>«Ручна верифікація»</strong>: кнопка <span style="color:var(--a2)">«📋 Ключ ГА → поле»</span> → <span style="color:var(--a2)">«🔍 Аналізувати»</span> → з'являється кнопка <span style="color:var(--a2)">«⇅ У дешифрацію»</span>.</td></tr>
+      <tr style="border-bottom:1px solid var(--brd)"><td style="padding:7px 8px;color:var(--a2);font-weight:700">02</td><td style="padding:7px 8px;color:var(--txt);font-weight:700">Заповнення</td><td style="padding:7px 8px;color:#94a3b8;line-height:1.6">У секції <strong>«03 · Дешифрація AES-128»</strong>: натисніть <span style="color:var(--red)">«📋 Ключ з ГА»</span> і <span style="color:var(--red)">«⇅ Шифр з аналізу»</span> — поля заповняться автоматично.</td></tr>
+      <tr><td style="padding:7px 8px;color:var(--grn);font-weight:700">03</td><td style="padding:7px 8px;color:var(--txt);font-weight:700">Результат</td><td style="padding:7px 8px;color:#94a3b8;line-height:1.6">Натисніть <strong style="color:var(--grn)">«🔓 Дешифрувати»</strong>. Відновлений текст з'явиться у полі нижче. Статус покаже кількість байт і блоків.</td></tr>
+    </table>
+  </div>
+
+  <div class="sec" style="margin-top:10px">🌊 Лавинний ефект · 📊 Таблиця результатів · ⚙️ C++</div>
+  <div class="card" style="margin-bottom:14px;font-size:11px;line-height:1.8;color:#94a3b8">
+    <strong style="color:var(--txt)">Лавинний ефект AES:</strong> введіть ключ → «Аналізувати» → змініть 1 символ → «Аналізувати» знову → шифротекст повністю інший (~50% біт). Це і є лавинний ефект.<br><br>
+    <strong style="color:var(--txt)">Таблиця результатів:</strong> зберігається між запусками (не очищається при «Очистити»). Колонки: Сценарій · Поколінь до F≥0.8 · P-value · Ентропія · F(X) · Час (сек) · Key HEX · Статус.<br><br>
+    <strong style="color:var(--txt)">C++ компіляція:</strong><br>
+    <code style="display:block;background:var(--surf);padding:6px 10px;border-radius:4px;color:var(--grn);margin:5px 0;font-size:10px">g++ -O2 -std=c++17 -o crypto_analyzer crypto_analyzer.cpp</code>
+    <code style="display:block;background:var(--surf);padding:6px 10px;border-radius:4px;color:var(--grn);margin:5px 0;font-size:10px">crypto_analyzer.exe input.txt 2 seriesB.csv</code>
+    Відкрийте seriesB.csv у Excel → стовпець Fitness → лінійний графік → Convergence Plot для диплому.
+  </div>
+
+  <div class="sec" style="margin-top:10px">🔔 Повідомлення про помилки</div>
+  <div class="card" style="margin-bottom:14px">
+    <div style="font-size:11px;margin-bottom:8px;color:#94a3b8">
+      Система виводить <strong style="color:var(--txt)">спливаючі повідомлення</strong>
+      у правому нижньому куті екрану (зникають через 3.5 сек, не блокують інтерфейс).
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:11px">
+      <tr style="background:var(--surf)">
+        <th style="padding:5px 8px;text-align:left;color:var(--a2);border-bottom:1px solid var(--brd);width:80px">Тип</th>
+        <th style="padding:5px 8px;text-align:left;color:var(--a2);border-bottom:1px solid var(--brd);width:200px">Повідомлення</th>
+        <th style="padding:5px 8px;text-align:left;color:var(--a2);border-bottom:1px solid var(--brd)">Що зробити</th>
+      </tr>
+      <tr style="border-bottom:1px solid var(--brd)">
+        <td style="padding:6px 8px"><span style="color:var(--red)">❌ Помилка</span></td>
+        <td style="padding:6px 8px;color:#94a3b8">Ключ має бути 32 HEX символи</td>
+        <td style="padding:6px 8px;color:#94a3b8">Натисніть «📋 Ключ з ГА» або «🎲 Випадковий ключ»</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--brd)">
+        <td style="padding:6px 8px"><span style="color:var(--red)">❌ Помилка</span></td>
+        <td style="padding:6px 8px;color:#94a3b8">Шифротекст містить недопустимі символи</td>
+        <td style="padding:6px 8px;color:#94a3b8">Натисніть «⇅ Шифр з аналізу» замість ручного введення</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--brd)">
+        <td style="padding:6px 8px"><span style="color:var(--red)">❌ Помилка</span></td>
+        <td style="padding:6px 8px;color:#94a3b8">Шифротекст занадто короткий</td>
+        <td style="padding:6px 8px;color:#94a3b8">Потрібно мінімум 32 HEX символи (1 блок = 16 байт)</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--brd)">
+        <td style="padding:6px 8px"><span style="color:var(--red)">❌ Помилка</span></td>
+        <td style="padding:6px 8px;color:#94a3b8">pdf.js / mammoth.js не завантажено</td>
+        <td style="padding:6px 8px;color:#94a3b8">Перевірте інтернет-з'єднання; .txt файли не потребують CDN</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--brd)">
+        <td style="padding:6px 8px"><span style="color:#eab308">⚠️ Попередження</span></td>
+        <td style="padding:6px 8px;color:#94a3b8">Некоректні параметри ГА</td>
+        <td style="padding:6px 8px;color:#94a3b8">Популяція ≥ 4, мутація 0.0–1.0, ціль F(X) 0.0–1.0</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--brd)">
+        <td style="padding:6px 8px"><span style="color:#eab308">⚠️ Попередження</span></td>
+        <td style="padding:6px 8px;color:#94a3b8">Поле введення порожнє</td>
+        <td style="padding:6px 8px;color:#94a3b8">Вставте текст або відкрийте файл (мінімум 16 байт)</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--brd)">
+        <td style="padding:6px 8px"><span style="color:#eab308">⚠️ Попередження</span></td>
+        <td style="padding:6px 8px;color:#94a3b8">Ключ ГА / шифротекст відсутні</td>
+        <td style="padding:6px 8px;color:#94a3b8">Спочатку запустіть ГА або натисніть «🔍 Аналізувати»</td>
+      </tr>
+      <tr>
+        <td style="padding:6px 8px"><span style="color:var(--grn)">✓ Успіх</span></td>
+        <td style="padding:6px 8px;color:#94a3b8">Дешифровано N байт (K блоків)</td>
+        <td style="padding:6px 8px;color:#94a3b8">Відновлений текст відображається у полі нижче</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="sec" style="margin-top:10px">💡 Поради</div>
+  <div class="card" style="font-size:11px;line-height:1.9;color:#94a3b8">
+    <span style="color:var(--grn)">✓</span> <strong style="color:var(--txt)">Мінімум 500 байт</strong> — менший текст дає нестабільні результати<br>
+    <span style="color:var(--grn)">✓</span> <strong style="color:var(--txt)">Запустіть A, B, C</strong> — порівняйте в таблиці для диплому<br>
+    <span style="color:var(--grn)">✓</span> <strong style="color:var(--txt)">📂 Відкрити файл</strong> — підтримує .txt .docx .pdf та інші текстові формати<br>
+    <span style="color:var(--grn)">✓</span> <strong style="color:var(--txt)">Таблиця зберігається</strong> між запусками, очищається лише кнопкою «🗑 Очистити таблицю»<br>
+    <span style="color:var(--a2)">⚠</span> <strong style="color:var(--txt)">Ключ</strong> — 32 HEX символи (128 біт): <code style="background:var(--surf);padding:1px 4px;border-radius:3px;color:var(--a2);font-size:9px">2b7e151628aed2a6abf7158809cf4f3c</code><br>
+    <span style="color:var(--a2)">⚠</span> <strong style="color:var(--txt)">Word/PDF</strong> — потребують інтернет (mammoth.js / pdf.js завантажуються з CDN)<br>
+    <span style="color:var(--mut)">ℹ</span> F(X) = w₁·H<sub>norm</sub> + w₂·P-value · AES-128 ECB · 10 раундів · FIPS 197
+  </div>
+
+</div><!-- /#th -->
+
+</div><!-- /.w -->
+
+<script>
