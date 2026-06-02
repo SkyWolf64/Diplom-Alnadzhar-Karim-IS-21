@@ -1,0 +1,221 @@
+// ════════════════════════════════════════
+// ЧАСТОТНИЙ АНАЛІЗ БАЙТІВ
+// ════════════════════════════════════════
+
+/** Оновлює відображення топ-10 байтів у частотному аналізі */
+function updateFrequencyDisplay(data, elementId) {
+  const freqs = new Array(256).fill(0);
+  const bytes = (typeof data === 'string') ? new TextEncoder().encode(data) : data;
+  bytes.forEach(b => freqs[b]++);
+  const sorted = freqs
+    .map((count, byte) => ({ byte, count }))
+    .filter(item => item.count > 0)
+    .sort((a, b) => b.count - a.count);
+  const container = document.getElementById(elementId);
+  if (!container) return;
+  container.innerHTML = sorted.slice(0, 10).map(item => {
+    const label = item.byte === 32 ? 'Space'
+                : item.byte === 10 ? '\\n'
+                : item.byte === 13 ? '\\r'
+                : String.fromCharCode(item.byte).replace(/[^\x20-\x7E]/, '·');
+    return `<div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--brd);padding:2px 0;gap:12px">
+      <span>[${String(item.byte).padStart(3,' ')}] '<span style="color:var(--a2)">${label}</span>':</span>
+      <span style="color:#60a5fa">${item.count}</span>
+    </div>`;
+  }).join('');
+}
+
+/** Завантажує CSV з частотами байтів відкритого тексту */
+function dlSourceCSV() {
+  const text = document.getElementById('txt').value;
+  if (!text) { showMsg('Введіть або вставте текст у поле вхідних даних (мінімум 16 байт).'); return; }
+  const freqs = new Array(256).fill(0);
+  new TextEncoder().encode(text).forEach(b => freqs[b]++);
+  let csv = 'Byte_Code;Frequency\n';
+  freqs.forEach((count, i) => { csv += i + ';' + count + '\n'; });
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = 'source_statistics.csv';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 150);
+}
+
+
+async function runGA() {
+  if (running) return;
+
+  const startTime = performance.now(); // Фіксуємо час початку (у мілісекундах)
+
+  // Валідація введення
+  const pSz = parseInt(document.getElementById('pSz').value);
+  const mG  = parseInt(document.getElementById('mG').value);
+  // AES-128 вимагає рівно 16 байт ключа — фіксуємо значення
+  document.getElementById('kL').value = 16;
+  const kL  = 16;
+  const mR  = parseFloat(document.getElementById('mR').value);
+  const tF  = parseFloat(document.getElementById('tF').value);
+  const tS  = parseInt(document.getElementById('tS').value);
+
+  if (pSz < 4 || mG < 1 || mR <= 0 || mR > 1 || tF <= 0 || tF >= 1 || tS < 2) {
+    showMsg('Некоректні параметри. Перевірте: популяція ≥ 4, мутація 0.0–1.0, ціль F(X) 0.0–1.0.', 'warn');
+    return;
+  }
+
+  running  = true;
+  stopFlag = false;
+  document.getElementById('btnRun').disabled = true;
+
+  try {
+    const data  = toBytes(document.getElementById('txt').value);
+    if (data.length === 0) {
+      setStatus('', 'Помилка: введіть текст для аналізу');
+      log('❌ Поле введення порожнє. Введіть або завантажте текст.', '#ef4444');
+      return;
+    }
+    if (data.length < 16) {
+      setStatus('', 'Помилка: потрібно мінімум 16 байт для AES-128');
+      log('❌ Замало даних: AES-128 потребує мінімум 16 байт (один блок). Введіть більше тексту.', '#ef4444');
+      return;
+    }
+    const scName = ['','A (0.7/0.3)','B (0.5/0.5)','C (0.4/0.6)','Власний'][SC];
+
+    setStatus('run', 'Виконується: Сценарій ' + scName + ' · ' + pSz + ' особин · ' + mG + ' поколінь');
+    clearLog();
+
+    // Початкова статистика
+    const freq0 = byteFrequency(data);
+    const H0    = calcEntropy(freq0, data.length);
+    const P0    = pValueFromChi2(chiSquared(freq0, data.length));
+    log('Розмір даних: ' + data.length + ' байт', '#06b6d4');
+    log('Вихідна ентропія H₀ = ' + H0.toFixed(4) + '  P₀ = ' + P0.toFixed(4), '#06b6d4');
+    log('Сценарій: ' + scName + ' · w₁=' + W1.toFixed(2) + ' · w₂=' + W2.toFixed(2), '#06b6d4');
+    log('─'.repeat(50), '#2d3f6e');
+
+    let pop = initPopulation(pSz, kL, data).sort((a, b) => b.f - a.f);
+
+    const fitHistory = [], Hhist = [], Phist = [];
+    let genToTarget = -1;
+    csvRows = [['Generation','Fitness','Entropy','PValue','ExecutionTime_ms']];
+
+    for (let gen = 0; gen < mG; gen++) {
+      if (stopFlag) { log('⏹ Зупинено користувачем', '#f59e0b'); break; }
+
+      // Елітизм + нова популяція
+      const newPop = [pop[0], pop[1]];
+      while (newPop.length < pSz) {
+        const p1 = tournamentSelect(pop, tS);
+        const p2 = tournamentSelect(pop, tS);
+        // З імовірністю 70% використовуємо двоточковий, 30% — одноточковий (hybridCrossover)
+        const [k1, k2] = hybridCrossover(p1, p2);
+        const m1 = mutate(k1, mR);
+        const m2 = mutate(k2, mR);
+        newPop.push({ key: m1, f: fitness(data, m1) });
+        if (newPop.length < pSz) newPop.push({ key: m2, f: fitness(data, m2) });
+      }
+      pop = newPop.sort((a, b) => b.f - a.f);
+
+      // Статистика найкращої особини
+      const genStart = performance.now();
+      const best = pop[0];
+      const enc  = aesCipher(data, best.key);
+      const fq   = byteFrequency(enc);
+      const nn   = enc.length;
+      const H    = calcEntropy(fq, nn);
+      const P    = pValueFromChi2(chiSquared(fq, nn));
+      const genMs = (performance.now() - genStart).toFixed(3);
+
+      fitHistory.push(best.f);
+      Hhist.push(H);
+      Phist.push(P);
+      csvRows.push([gen, best.f.toFixed(6), H.toFixed(6), P.toFixed(6), genMs]);
+
+      if (genToTarget < 0 && best.f >= tF) genToTarget = gen;
+
+      // Оновлення UI кожні 2 покоління або на останньому
+      if (gen % 2 === 0 || gen === mG - 1) {
+        updateMetrics(best.f, H, P);
+        drawChart(fitHistory, Hhist, Phist, tF);
+        if (gen % 10 === 0) {
+          const prefix = 'Gen ' + String(gen).padStart(3, ' ');
+          log(prefix + '  F=' + best.f.toFixed(4) + '  H=' + H.toFixed(4) + '  P=' + P.toFixed(4),
+              best.f >= tF ? '#22d3ee' : '#e2e8f0');
+        }
+        await new Promise(r => setTimeout(r, 0)); // yield to UI
+      }
+    }
+
+    // Підсумок
+    const finalBest = pop[0];
+    const finalEnc  = aesCipher(data, finalBest.key);
+    const finalFq   = byteFrequency(finalEnc);
+    const finalH    = calcEntropy(finalFq, finalEnc.length);
+    const label = genToTarget >= 0
+      ? '✓ Мета F(X)≥' + tF + ' досягнута на поколінні ' + genToTarget
+      : '✗ Мета F(X)≥' + tF + ' не досягнута за ' + mG + ' поколінь';
+
+    log('─'.repeat(50), '#2d3f6e');
+    log(label, genToTarget >= 0 ? '#22d3ee' : '#f59e0b');
+    log('Фінальний F(X) = ' + finalBest.f.toFixed(4) +
+        '  H = ' + finalH.toFixed(4), '#22d3ee');
+    log('Ентропія: ' + H0.toFixed(4) + ' → ' + finalH.toFixed(4) +
+        ' (збільшення: ' + (finalH - H0).toFixed(4) + ')', '#22d3ee');
+
+    // Зберігаємо повний шифротекст для дешифрації в UI
+    lastEncryptedHex = Array.from(finalEnc).map(b => b.toString(16).padStart(2,'0')).join('');
+
+    // Chart.js оновлення гістограми та збіжності
+    updateCharts(document.getElementById('txt').value, Array.from(finalEnc), fitHistory);
+
+    // NIST Monobit Test (підрозділ 4.3.3)
+    const mbtSource = monobitTest(data);
+    const mbtCipher = monobitTest(finalEnc);
+    log('NIST Monobit: відкритий текст P=' + mbtSource.toFixed(4) +
+        (mbtSource > 0.01 ? ' ✓' : ' ✗') +
+        ' | шифротекст P=' + mbtCipher.toFixed(4) +
+        (mbtCipher > 0.01 ? ' ✓' : ' ✗'), '#a78bfa');
+
+    setStatus('done', label);
+
+    // Частотний аналіз: відкритий текст та фінальний шифротекст
+    updateFrequencyDisplay(data,    'sourceFreqList');
+    updateFrequencyDisplay(finalEnc,'cipherFreqList');
+
+    // Зберігаємо hexKey найкращої особини
+    const hexKey = Array.from(finalBest.key)
+      .map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+
+    // Збереження результату для таблиці
+    const endTime         = performance.now();
+    const durationSeconds = ((endTime - startTime) / 1000).toFixed(3); // Час у секундах
+
+    allResults.push({
+      scenario:    scName,
+      genToTarget: genToTarget >= 0 ? genToTarget : '>' + mG,
+      avgPval:     Phist.length ? (Phist.reduce((a,b)=>a+b,0)/Phist.length).toFixed(3) : '—',
+      finalH:      finalH.toFixed(4),
+      finalF:      finalBest.f.toFixed(4),
+      hexKey:      hexKey,
+      duration:    durationSeconds + ' сек',
+      reached:     genToTarget >= 0,
+      csvSnapshot: csvRows.slice()
+    });
+    log('⏱ Час виконання: ' + durationSeconds + ' сек', '#a78bfa');
+    // Частотний аналіз відкритого тексту та шифротексту
+    updateFrequencyDisplay(data, 'sourceFreqList');
+    updateFrequencyDisplay(finalEnc, 'cipherFreqList');
+    updateResultsTable(); // оновити таблицю одразу після завершення
+
+  } catch (err) {
+    setStatus('', 'Помилка: ' + err.message);
+    log('❌ Помилка виконання: ' + err.message, '#ef4444');
+  } finally {
+    running = false;
+    document.getElementById('btnRun').disabled = false;
+  }
+}
+
+function stopGA() {
+  stopFlag = true;
+}
