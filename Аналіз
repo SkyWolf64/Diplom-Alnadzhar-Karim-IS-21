@@ -1,0 +1,232 @@
+<!-- ══════════════════ АНАЛІЗ ══════════════════ -->
+<div class="tp on" id="ta">
+
+  <div class="sec">01 &middot; Вхідні дані</div>
+  <div class="card">
+    <div class="g2">
+      <div>
+        <label>Текст для аналізу (рекомендується 500&ndash;5000 символів)</label>
+        <textarea id="txt" oninput="checkDataSize()">The quick brown fox jumps over the lazy dog. Це тестовий текст для аналізу ентропії Шеннона та перевірки ефективності генетичного алгоритму підбору параметрів AES-128 шифрування. H = -sum(p_i * log2(p_i)). Рекомендований розмір даних: більше 500 символів для отримання якісних результатів без плато збіжності.</textarea>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:5px">
+          <div id="dataSizeInfo" style="font-size:10px;color:var(--mut);flex:1"></div>
+          <button class="btn bs" onclick="openFileDialog()" style="font-size:10px;padding:3px 10px" title="Відкрити текстовий файл, Word або PDF">&#128194; Відкрити файл</button>
+          <button class="btn bs" onclick="clearText()" style="font-size:10px;padding:3px 10px" title="Очистити текстове поле">&#10006; Очистити</button>
+          <!-- прихований input для вибору файлу -->
+          <input type="file" id="fileInput" accept=".txt,.csv,.md,.json,.js,.cpp,.html,.xml,.log,.docx,.pdf"
+                 style="display:none" onchange="handleFileOpen(event)">
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:7px">
+        <label>Зразки датасетів</label>
+        <button class="btn bs" style="font-size:10px" onclick="ls('text')">Текст (Wikipedia-стиль)</button>
+        <button class="btn bs" style="font-size:10px" onclick="ls('code')">Код (C++/JSON)</button>
+        <button class="btn bs" style="font-size:10px" onclick="ls('rand')">Псевдовипадковий</button>
+        <button class="btn bs" style="font-size:10px" onclick="ls('comp')">Висока початкова ентропія</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="smallDataWarn" class="warn-banner">
+    &#9888; Розмір даних менше 256 байт. Генетичний алгоритм може досягти плато через малу кількість унікальних байтів. Для дипломної роботи рекомендується 500+ символів.
+  </div>
+
+  <div class="sec">02 &middot; Сценарій (ваги фітнес-функції)</div>
+  <div class="scr">
+    <button class="sc"    id="sc1" onclick="setSc(1)"><b>A: 0.7&thinsp;/&thinsp;0.3</b>w&#8321;=0.7 &middot; w&#8322;=0.3</button>
+    <button class="sc on" id="sc2" onclick="setSc(2)"><b>B: 0.5&thinsp;/&thinsp;0.5 &#9733;</b>w&#8321;=0.5 &middot; w&#8322;=0.5</button>
+    <button class="sc"    id="sc3" onclick="setSc(3)"><b>C: 0.4&thinsp;/&thinsp;0.6</b>w&#8321;=0.4 &middot; w&#8322;=0.6</button>
+    <button class="sc"    id="sc4" onclick="setSc(4)"><b>Власний</b>Задати w&#8321; вручну</button>
+  </div>
+  <div class="card" id="cwc" style="display:none;margin-bottom:16px">
+    <label>w&#8321; (вага ентропії H)</label>
+    <div style="display:flex;align-items:center;gap:11px;margin-bottom:12px">
+      <input type="range" id="w1s" min="0.05" max="0.95" step="0.05" value="0.5" oninput="syncW()">
+      <span id="w1v" style="min-width:32px;text-align:right;color:var(--acc);font-weight:600">0.50</span>
+    </div>
+    <label>w&#8322; (вага P-value) = 1 &minus; w&#8321;</label>
+    <div style="display:flex;align-items:center;gap:11px">
+      <input type="range" id="w2s" min="0.05" max="0.95" step="0.05" value="0.5" oninput="syncW2()">
+      <span id="w2v" style="min-width:32px;text-align:right;color:var(--acc);font-weight:600">0.50</span>
+    </div>
+    <div style="font-size:10px;color:var(--mut);margin-top:8px">w&#8321; + w&#8322; = 1.00 (автоматична нормалізація)</div>
+  </div>
+
+  <div class="card" style="margin-bottom:18px">
+    <div class="sec" style="margin-bottom:12px">Параметри генетичного алгоритму</div>
+    <div class="g3">
+      <div><label>Розмір популяції</label><input type="number" id="pSz" value="200" min="4" max="500"></div>
+      <div><label>Макс. поколінь</label><input type="number" id="mG" value="150" min="1" max="1000"></div>
+      <div><label>Довжина ключа AES-128 (байт)</label><input type="number" id="kL" value="16" min="16" max="16" readonly style="opacity:.6;cursor:not-allowed" title="AES-128 вимагає рівно 16 байт (128 біт)"></div>
+      <div><label>Ймов. мутації</label><input type="number" id="mR" value="0.05" min="0.001" max="0.5" step="0.005"></div>
+      <div><label>Ціль F(X) &ge;</label><input type="number" id="tF" value="0.90" min="0.5" max="0.999" step="0.01"></div>
+      <div><label>Розмір турніру k</label><input type="number" id="tS" value="3" min="2" max="20"></div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:11px;margin-bottom:22px;align-items:center;flex-wrap:wrap">
+    <button class="btn bp" id="btnRun" onclick="runGA()">&#9654; Запустити</button>
+    <button class="btn bd" onclick="stopGA()">&#9632; Зупинити</button>
+    <div class="sb" style="flex:1;min-width:170px">
+      <div class="sd" id="sd"></div>
+      <span id="st">Готовий до запуску</span>
+    </div>
+  </div>
+
+  <!-- ── Ручна верифікація ключа ── -->
+  <div class="card" style="margin-bottom:18px;border-color:rgba(88,166,255,.25)">
+    <div class="sec" style="margin-bottom:12px">🔑 Ручна верифікація ключа (демонстрація лавинного ефекту)</div>
+    <!-- Рядок кнопок + поле вводу -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
+      <input type="text" id="manualKeyInput"
+             placeholder="Введіть 16 байт у HEX (32 символи), наприклад: 2b7e151628aed2a6abf7158809cf4f3c"
+             style="flex-grow:1;min-width:200px;background:var(--surf);color:var(--txt);border:1px solid var(--brd);border-radius:5px;padding:7px 10px;font-family:JetBrains Mono,monospace;font-size:11px">
+      <button class="btn bs" onclick="genRandomKey()" style="white-space:nowrap" title="Згенерувати випадковий 128-бітний ключ">&#127922; Випадковий ключ</button>
+      <button class="btn bs" onclick="runManualVerify()" style="white-space:nowrap">&#128269; Аналізувати</button>
+      <button class="btn bs" onclick="copyBestKey()" style="white-space:nowrap" id="btnCopyKey" title="Скопіювати найкращий ключ ГА в поле HEX">&#128203; Ключ ГА &rarr; поле</button>
+      <button class="btn bs" onclick="copyKeyClipboard()" style="white-space:nowrap" id="btnCopyKeyClip" title="Скопіювати поточний ключ у буфер обміну">&#128190; Копіювати ключ</button>
+    </div>
+    <!-- Індикатор складності F(X) -->
+    <div style="margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--mut);margin-bottom:3px">
+        <span>Складність/Надійність ключа</span>
+        <span id="keyStrengthLabel">—</span>
+      </div>
+      <div style="height:6px;background:var(--surf);border-radius:3px;overflow:hidden;border:1px solid var(--brd)">
+        <div id="keyStrengthBar" style="height:100%;width:0%;background:var(--red);border-radius:3px;transition:width .4s,background .4s"></div>
+      </div>
+    </div>
+    <!-- Результат верифікації -->
+    <div id="manualVerifyResult" style="font-size:10px;color:var(--mut);min-height:18px;margin-bottom:8px"></div>
+    <!-- Ciphertext Preview -->
+    <div id="ciphertextPreviewWrap" style="display:none">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <div style="font-size:9px;color:var(--mut)">Шифротекст (HEX) — перші 64 байти:</div>
+        <div style="display:flex;gap:6px">
+          <button class="btn bs" onclick="copyFullCipherToDecrypt()" style="font-size:9px;padding:2px 8px" title="Скопіювати повний шифротекст у поле дешифрації">
+            &#8645; У дешифрацію
+          </button>
+          <button class="btn bs" onclick="copyFullCipherClipboard()" style="font-size:9px;padding:2px 8px" title="Скопіювати повний шифротекст у буфер">
+            &#128190; Копіювати HEX
+          </button>
+        </div>
+      </div>
+      <div id="ciphertextPreview"
+           style="font-family:JetBrains Mono,monospace;font-size:9px;color:var(--a2);background:var(--surf);
+                  border:1px solid var(--brd);border-radius:4px;padding:6px 8px;word-break:break-all;line-height:1.7">
+      </div>
+    </div>
+    <small style="color:var(--mut);font-size:9px;display:block;margin-top:6px">
+      &#9654; Запустіть ГА → «Ключ ГА → поле» → змініть один символ → «Аналізувати» — спостерігайте лавинний ефект AES
+    </small>
+  </div>
+
+  <div class="sec">03 &middot; Дешифрація AES-128</div>
+  <div class="card" style="margin-bottom:18px;border-color:rgba(239,68,68,.25)">
+    <div style="font-size:10px;color:var(--mut);margin-bottom:10px">
+      Вставте HEX-шифротекст та ключ для дешифрації. Результат відображається миттєво.
+    </div>
+    <!-- Шифротекст (HEX) -->
+    <label>Шифротекст (HEX)</label>
+    <textarea id="decCipherHex" rows="3"
+      style="width:100%;background:var(--surf);color:var(--a2);border:1px solid var(--brd);
+             border-radius:5px;padding:7px 10px;font-family:JetBrains Mono,monospace;
+             font-size:10px;resize:vertical;margin-bottom:8px"
+      placeholder="Вставте HEX-рядок шифротексту..."></textarea>
+    <!-- Ключ -->
+    <label>Ключ дешифрації (32 HEX символи = 128 біт)</label>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:8px">
+      <input type="text" id="decKeyInput"
+             placeholder="Наприклад: 2b7e151628aed2a6abf7158809cf4f3c"
+             style="flex-grow:1;min-width:200px;background:var(--surf);color:var(--txt);
+                    border:1px solid var(--brd);border-radius:5px;padding:7px 10px;
+                    font-family:JetBrains Mono,monospace;font-size:11px">
+      <button class="btn bs" onclick="copyGAKeyToDecrypt()" title="Підставити найкращий ключ ГА" style="white-space:nowrap">
+        &#128203; Ключ з ГА
+      </button>
+      <button class="btn bs" onclick="copyCipherToDecrypt()" title="Підставити шифротекст з вікна верифікації" style="white-space:nowrap">
+        &#8645; Шифр з аналізу
+      </button>
+      <button class="btn bs" onclick="runDecrypt()" style="white-space:nowrap;border-color:var(--red);color:var(--red)">
+        &#128275; Дешифрувати
+      </button>
+    </div>
+    <!-- Результат -->
+    <div id="decResult" style="display:none">
+      <div style="font-size:9px;color:var(--mut);margin-bottom:4px">Відновлений текст:</div>
+      <textarea id="decOutputText" rows="4" readonly
+        style="width:100%;background:var(--surf);color:var(--grn);border:1px solid var(--brd);
+               border-radius:4px;padding:6px 8px;font-family:JetBrains Mono,monospace;
+               font-size:10px;resize:vertical"></textarea>
+      <div id="decStatus" style="font-size:10px;margin-top:6px"></div>
+    </div>
+    <button class="btn bs" onclick="clearDecrypt()"
+            style="margin-top:8px;font-size:10px;opacity:.7">
+      &#10005; Очистити поля
+    </button>
+    <small style="color:var(--mut);font-size:9px;display:block;margin-top:6px">
+      &#9654; Запустіть ГА → «Ключ з ГА» → «Шифр з аналізу» → «Дешифрувати» — верифікація цілісності даних
+    </small>
+  </div>
+
+  <div class="sec">04 &middot; Поточні метрики</div>
+  <div class="g3">
+    <div class="mc">
+      <div class="ml">F(X) &mdash; Фітнес</div>
+      <div class="mv" id="mF" style="color:var(--acc)">—</div>
+      <div class="mb"><div class="mbf" id="bF" style="width:0%;background:var(--acc)"></div></div>
+    </div>
+    <div class="mc">
+      <div class="ml">Ентропія H&#8203;<sub>norm</sub></div>
+      <div class="mv" id="mH" style="color:var(--grn)">—</div>
+      <div class="mb"><div class="mbf" id="bH" style="width:0%;background:var(--grn)"></div></div>
+    </div>
+    <div class="mc">
+      <div class="ml">P-value (&chi;&#178;)</div>
+      <div class="mv" id="mP" style="color:var(--org)">—</div>
+      <div class="mb"><div class="mbf" id="bP" style="width:0%;background:var(--org)"></div></div>
+    </div>
+  </div>
+
+  <div class="sec">04 &middot; Графік збіжності</div>
+  <div class="card" style="padding:13px">
+    <canvas id="cv" height="250"></canvas>
+    <div style="font-size:10px;color:var(--mut);margin-top:8px;text-align:center">
+      Вісь X: номер покоління &nbsp;&middot;&nbsp; Вісь Y: значення фітнес-функції F(X) &nbsp;&middot;&nbsp;
+      <span style="color:#3b82f6">&#9644; F(X)</span> &nbsp;
+      <span style="color:#22d3ee">&#9644; H</span> &nbsp;
+      <span style="color:#f59e0b">&#9644; P</span>
+    </div>
+  </div>
+
+  <div class="sec">05 &middot; Частотний аналіз байтів (Top 10)</div>
+  <div class="card" style="margin-bottom:18px">
+    <div style="display:flex;gap:20px;justify-content:space-between;flex-wrap:wrap">
+      <div id="freq-source" style="flex:1;min-width:180px">
+        <h4 style="color:#94a3b8;font-size:0.8rem;margin-bottom:8px">Відкритий текст:</h4>
+        <div id="sourceFreqList" style="font-family:JetBrains Mono,monospace;font-size:0.85rem;color:var(--txt);min-height:40px">
+          <span style="color:var(--mut);font-size:10px">Очікування аналізу...</span>
+        </div>
+      </div>
+      <div id="freq-cipher" style="flex:1;min-width:180px">
+        <h4 style="color:#94a3b8;font-size:0.8rem;margin-bottom:8px">Шифротекст:</h4>
+        <div id="cipherFreqList" style="font-family:JetBrains Mono,monospace;font-size:0.85rem;color:var(--txt);min-height:40px">
+          <span style="color:var(--mut);font-size:10px">Очікування аналізу...</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Frequency Analysis (Top 10) — grid view з srcFreq / cipherFreq -->
+  <div class="stat-card" style="grid-column:span 2;margin-bottom:14px">
+    <h3 style="font-size:11px;color:var(--a2);margin-bottom:10px">Frequency Analysis (Top 10)</h3>
+    <div id="freqContainer" style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div><small style="color:var(--mut)">Source:</small><div id="srcFreq" style="font-family:JetBrains Mono,monospace;font-size:9px;color:var(--txt);margin-top:4px"></div></div>
+      <div><small style="color:var(--mut)">Cipher:</small><div id="cipherFreq" style="font-family:JetBrains Mono,monospace;font-size:9px;color:var(--txt);margin-top:4px"></div></div>
+    </div>
+  </div>
+
+  <div class="sec">06 &middot; Лог виконання</div>
+  <div class="log" id="lg">
+    <span style="color:var(--a2)">// Система готова. Оберіть сценарій та натисніть "Запустити".</span>
+  </div>
+</div>
