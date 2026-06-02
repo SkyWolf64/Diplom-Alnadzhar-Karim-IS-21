@@ -1,0 +1,99 @@
+// ════════════════════════════════════════
+// CHART.JS ВІЗУАЛІЗАЦІЯ
+// ════════════════════════════════════════
+let fChart = null;
+let cChart = null;
+let lastEncryptedHex = ''; // зберігає повний шифротекст після кожного шифрування
+
+/** Оновлює гістограму частот і графік збіжності через Chart.js */
+function updateCharts(sourceText, encryptedBytes, fitnessHistory) {
+  // ── 1. Гістограма частот (freqChart) ──
+  const ctxF = document.getElementById('freqChart');
+  if (!ctxF) return;
+
+  const sFreq = new Array(256).fill(0);
+  const eFreq = new Array(256).fill(0);
+  if (sourceText && sourceText.length > 0)
+    new TextEncoder().encode(sourceText).forEach(b => sFreq[b]++);
+  if (encryptedBytes && encryptedBytes.length > 0)
+    encryptedBytes.forEach(b => eFreq[b]++);
+
+  if (fChart) {
+    fChart.data.datasets[0].data = sFreq;
+    fChart.data.datasets[1].data = eFreq;
+    fChart.update('none');
+  } else {
+    fChart = new Chart(ctxF.getContext('2d'), {
+      type: 'bar',
+      data: {
+        labels: Array.from({length: 256}, (_, i) => i),
+        datasets: [
+          { label: 'Source', data: sFreq, backgroundColor: '#3b82f6', barPercentage: 1.0, categoryPercentage: 1.0 },
+          { label: 'Cipher', data: eFreq, backgroundColor: '#ef4444', barPercentage: 1.0, categoryPercentage: 1.0 }
+        ]
+      },
+      options: {
+        responsive: true,
+        animation: false,
+        scales: { x: { display: false }, y: { beginAtZero: true } },
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
+
+  // ── 2. Графік збіжності (convergenceChart) ──
+  const ctxC = document.getElementById('convergenceChart');
+  if (!ctxC) return;
+
+  // Якщо текст порожній або немає даних збіжності — очищаємо графік
+  if (!fitnessHistory || !fitnessHistory.length) {
+    if (cChart && (!sourceText || sourceText.length === 0)) {
+      cChart.data.labels = [];
+      cChart.data.datasets[0].data = [];
+      cChart.update('none');
+    }
+    return;
+  }
+  if (cChart) {
+    cChart.data.labels = fitnessHistory.map((_, i) => i);
+    cChart.data.datasets[0].data = fitnessHistory;
+    cChart.update('none');
+  } else {
+    cChart = new Chart(ctxC.getContext('2d'), {
+      type: 'line',
+      data: {
+        labels: fitnessHistory.map((_, i) => i),
+        datasets: [{
+          label: 'Fitness',
+          data: fitnessHistory,
+          borderColor: '#10b981',
+          borderWidth: 2,
+          pointRadius: 0,
+          fill: true,
+          backgroundColor: 'rgba(16, 185, 129, 0.1)'
+        }]
+      },
+      options: {
+        responsive: true,
+        animation: false,
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
+}
+
+/** Завантажує CSV частот відкритого тексту (для Chart.js блоку) */
+function dlSourceCSVChart() {
+  const text = document.getElementById('txt').value;
+  if (!text) { showMsg('Введіть або вставте текст у поле вхідних даних (мінімум 16 байт).'); return; }
+  const freqs = new Array(256).fill(0);
+  new TextEncoder().encode(text).forEach(b => freqs[b]++);
+  let csv = 'Byte;Frequency\n' + freqs.map((f, i) => `${i};${f}`).join('\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = 'source_frequency.csv';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 150);
+}
