@@ -1,0 +1,14 @@
+<body>
+<div class="w">
+
+<header>
+  <h1>Інформаційна система статистичного аналізу<br>та криптографічного перетворення текстових даних</h1>
+</header>
+
+<div class="tabs">
+  <button class="tab on" onclick="sw('a')">Аналіз та ГА</button>
+  <button class="tab"    onclick="sw('r')">Результати</button>
+  <button class="tab"    onclick="sw('c')">C++ Код</button>
+  <button class="tab"    onclick="sw('i')">Про систему</button>
+  <button class="tab"    onclick="sw('h')">&#128214; Інструкція</button>
+</div>
