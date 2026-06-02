@@ -1,0 +1,118 @@
+// ════════════════════════════════════════════════════════════════
+//  UI ФУНКЦІЇ
+// ════════════════════════════════════════════════════════════════
+
+function sw(name) {
+  const names = ['a','r','c','i','h'];
+  document.querySelectorAll('.tab').forEach((t,i) =>
+    t.classList.toggle('on', names[i] === name));
+  document.querySelectorAll('.tp').forEach(p =>
+    p.classList.toggle('on', p.id === 't' + name));
+  if (name === 'r') updateResultsTable();
+}
+
+function setSc(n) {
+  SC = n;
+  [1,2,3,4].forEach(i =>
+    document.getElementById('sc'+i).classList.toggle('on', i===n));
+  document.getElementById('cwc').style.display = (n===4) ? '' : 'none';
+  const presets = [[0.7,0.3],[0.5,0.5],[0.4,0.6]];
+  if (n <= 3) { W1 = presets[n-1][0]; W2 = presets[n-1][1]; }
+  document.getElementById('w1s').value = W1;
+  document.getElementById('w2s').value = W2;
+  document.getElementById('w1v').textContent = W1.toFixed(2);
+  document.getElementById('w2v').textContent = W2.toFixed(2);
+}
+
+function syncW() {
+  W1 = Math.round(parseFloat(document.getElementById('w1s').value) * 100) / 100;
+  W2 = Math.round((1 - W1) * 100) / 100;
+  // Guard: correct any residual float drift so W1+W2 === 1.00 exactly
+  if (Math.abs(W1 + W2 - 1) > 0.001) W2 = Math.round((1 - W1) * 1000) / 1000;
+  document.getElementById('w2s').value = W2;
+  document.getElementById('w1v').textContent = W1.toFixed(2);
+  document.getElementById('w2v').textContent = W2.toFixed(2);
+}
+
+function syncW2() {
+  W2 = Math.round(parseFloat(document.getElementById('w2s').value) * 100) / 100;
+  W1 = Math.round((1 - W2) * 100) / 100;
+  if (Math.abs(W1 + W2 - 1) > 0.001) W1 = Math.round((1 - W2) * 1000) / 1000;
+  document.getElementById('w1s').value = W1;
+  document.getElementById('w1v').textContent = W1.toFixed(2);
+  document.getElementById('w2v').textContent = W2.toFixed(2);
+}
+
+function ls(type) {
+  const text = SAMPLES[type];
+  document.getElementById('txt').value = text;
+  checkDataSize();
+  updateCharts(text, [], []);
+  log('Зразок завантажено: ' + type, '#06b6d4');
+}
+
+function checkDataSize() {
+  const bytes = new TextEncoder().encode(document.getElementById('txt').value).length;
+  const info = document.getElementById('dataSizeInfo');
+  const warn = document.getElementById('smallDataWarn');
+  info.textContent = bytes + ' байт';
+  info.style.color = bytes < 500 ? '#f59e0b' : '#22d3ee';
+  warn.style.display = bytes < 256 ? 'block' : 'none';
+}
+
+function log(msg, color = '#64748b') {
+  const box = document.getElementById('lg');
+  const div = document.createElement('div');
+  div.style.color = color;
+  div.textContent = msg;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+
+function clearLog() { document.getElementById('lg').innerHTML = ''; }
+
+function setStatus(state, msg) {
+  document.getElementById('sd').className = 'sd' +
+    (state==='run' ? ' run' : state==='done' ? ' done' : '');
+  document.getElementById('st').textContent = msg;
+}
+
+function updateMetrics(F, H, P) {
+  const color = v => v >= 0.9 ? 'var(--grn)' : v >= 0.7 ? 'var(--org)' : 'var(--red)';
+  const fmt   = v => v.toFixed(3);
+  [['mF',F,'bF'],['mH',H,'bH'],['mP',P,'bP']].forEach(([mid,v,bid]) => {
+    document.getElementById(mid).textContent = fmt(v);
+    document.getElementById(mid).style.color = color(v);
+    document.getElementById(bid).style.width = (v*100).toFixed(1) + '%';
+    document.getElementById(bid).style.background = color(v);
+  });
+}
+
+function copyCpp() {
+  const ok  = document.getElementById('cppOk');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(CPP_SOURCE).then(() => {
+      ok.style.display = 'block';
+      setTimeout(() => ok.style.display = 'none', 5000);
+    }).catch(() => fallbackCopy());
+  } else {
+    fallbackCopy();
+  }
+}
+
+function fallbackCopy() {
+  // Fallback for non-HTTPS or older browsers
+  const ta = document.createElement('textarea');
+  ta.value = CPP_SOURCE;
+  ta.style.cssText = 'position:fixed;top:-9999px;opacity:0';
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand('copy');
+    document.getElementById('cppOk').style.display = 'block';
+    setTimeout(() => document.getElementById('cppOk').style.display = 'none', 5000);
+  } catch(e) {
+    showMsg('Не вдалося скопіювати. Відкрийте вихідний код сторінки (Ctrl+U) та скопіюйте C++ вручну.', 'warn');
+  }
+  document.body.removeChild(ta);
+}
