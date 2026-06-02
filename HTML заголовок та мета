@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<!-- ================================================================
+  CRYPTO_ANALYZER — Інформаційна система статистичного аналізу
+  та криптографічного перетворення текстових даних
+
+  ЯК ВИКОРИСТОВУВАТИ C++ КОД:
+  1. Відкрийте вкладку "C++ Код" → натисніть "Копіювати C++"
+  2. Вставте у Notepad++, збережіть як crypto_analyzer.cpp
+  3. g++ -O2 -std=c++17 -o crypto_analyzer crypto_analyzer.cpp
+  4. crypto_analyzer.exe input.txt 1 seriesA.csv
+     crypto_analyzer.exe input.txt 2 seriesB.csv
+     crypto_analyzer.exe input.txt 3 seriesC.csv
+  5. Відкрийте CSV в Excel → побудуйте лінійний графік колонки
+     Fitness — Графік збіжності
+================================================================ -->
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crypto Analyzer — Статистичний аналіз та AES-128 шифрування</title>
+<noscript><p style="font-family:monospace;padding:20px;color:#ef4444">
+  Для роботи інтерфейсу потрібен JavaScript. C++ код доступний у вихідному коді сторінки.
+</p></noscript>
