@@ -1,0 +1,37 @@
+// ════════════════════════════════════════════════════════════════
+//  ІНІЦІАЛІЗАЦІЯ
+// ════════════════════════════════════════════════════════════════
+setSc(2);
+checkDataSize();
+
+// Ініціалізація після рендеру DOM
+requestAnimationFrame(() => {
+  drawChart([], [], [], 0.9);
+
+  // Ініціалізуємо fChart: тимчасово активуємо вкладку Результати
+  // щоб canvas мав реальні розміри (Chart.js вимагає visible canvas)
+  const tabs    = document.querySelectorAll('.tab');
+  const panels  = document.querySelectorAll('.tp');
+  const names   = ['a','r','c','i'];
+  const current = 'a'; // зараз активна вкладка Аналіз
+
+  // Переключаємо на Results
+  tabs.forEach((t,i)   => t.classList.toggle('on', names[i] === 'r'));
+  panels.forEach((p,i) => p.classList.toggle('on', names[i] === 'r'));
+
+  // Ініціалізуємо з поточним текстом
+  updateCharts(document.getElementById('txt').value, [], []);
+
+  // Повертаємо вкладку Аналіз
+  tabs.forEach((t,i)   => t.classList.toggle('on', names[i] === current));
+  panels.forEach((p,i) => p.classList.toggle('on', names[i] === current));
+});
+
+// Оновлення гістограми при введенні/видаленні тексту
+document.getElementById('txt').addEventListener('input', function() {
+  updateCharts(this.value, [], []);
+  checkDataSize();
+});</script>
+<div id="toastMsg" class="toast-msg"></div>
+</body>
+</html>
