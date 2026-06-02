@@ -1,0 +1,50 @@
+// ════════════════════════════════════════════════════════════════
+//  ГЕНЕТИЧНИЙ АЛГОРИТМ (JS — повна відповідність C++ логіці)
+// ════════════════════════════════════════════════════════════════
+
+function randInt(a, b) { return a + Math.floor(Math.random() * (b - a + 1)); }
+
+function initPopulation(sz, kLen, data) {
+  return Array.from({ length: sz }, () => {
+    const key = new Uint8Array(kLen).map(() => randInt(0, 255));
+    return { key, f: fitness(data, key) };
+  });
+}
+
+function tournamentSelect(pop, k) {
+  let best = pop[randInt(0, pop.length-1)];
+  for (let i = 1; i < k; i++) {
+    const cand = pop[randInt(0, pop.length-1)];
+    if (cand.f > best.f) best = cand;
+  }
+  return best;
+}
+
+// 3.2.2. Гібридний кросинговер: 70% двоточковий, 30% одноточковий (підрозділ 3.2 ПЗ)
+function hybridCrossover(parent1, parent2) {
+  const len = parent1.key.length;
+  // 70% імовірність двоточкового кросинговеру (як у тексті ПЗ)
+  if (Math.random() < 0.7) {
+    let cp1 = Math.floor(Math.random() * (len - 1));       // 0 .. len-2
+    let cp2 = Math.floor(Math.random() * (len - cp1 - 1)) + cp1 + 1; // cp1+1 .. len-1
+    const child1 = new Uint8Array(parent1.key);
+    const child2 = new Uint8Array(parent2.key);
+    for (let i = cp1; i < cp2; i++) {
+      child1[i] = parent2.key[i];
+      child2[i] = parent1.key[i];
+    }
+    return [child1, child2];
+  }
+  // 30% звичайний одноточковий
+  const cp = Math.floor(Math.random() * (len - 1)) + 1;   // 1 .. len-1
+  const k1 = new Uint8Array([...parent1.key.slice(0, cp), ...parent2.key.slice(cp)]);
+  const k2 = new Uint8Array([...parent2.key.slice(0, cp), ...parent1.key.slice(cp)]);
+  return [k1, k2];
+}
+
+function mutate(key, rate) {
+  const result = new Uint8Array(key);
+  for (let i = 0; i < result.length; i++)
+    if (Math.random() < rate) result[i] = randInt(0, 255);
+  return result;
+}
