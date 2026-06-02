@@ -1,0 +1,62 @@
+// ──── Синтаксичне підсвічування ────
+function highlight(src) {
+  const KW = new Set(['int','double','void','bool','char','auto','const','return',
+    'if','else','for','while','do','struct','class','using','namespace',
+    'new','delete','pair','vector','string','size_t','uint8_t','mt19937','move',
+    'private','public','static']);
+  const TY = new Set(['std','cerr','cout','endl','fixed','setprecision','setw',
+    'ifstream','ofstream','istreambuf_iterator','uniform_int_distribution',
+    'uniform_real_distribution','max','min','sort','pow','sqrt','exp','log2','fabs',
+    'memcpy','swap']);
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+
+  function highlightCode(seg) {
+    // Tokenise: alternate between spans (already tagged) and plain text
+    // so we never apply number/word regex inside an existing <span>
+    const parts = seg.split(/(<span[^>]*>.*?<\/span>)/);
+    return parts.map((part, idx) => {
+      if (idx % 2 === 1) return part; // already a span — leave untouched
+      // Plain text: apply number highlighting first, then keywords
+      let p = part.replace(/\b(\d+\.\d+[fF]?|\d+(?:[uUlL]+)?)\b/g, '<span class="nu">$1</span>');
+      p = p.replace(/\b([A-Za-z_]\w*)\b/g, (m) => {
+        if (KW.has(m)) return '<span class="kw">' + m + '</span>';
+        if (TY.has(m)) return '<span class="ty">' + m + '</span>';
+        return m;
+      });
+      return p;
+    }).join('');
+  }
+
+  // Tag string literals in a segment (returns segment with <span class="st"> for strings)
+  function tagStrings(s) {
+    return s.replace(/"([^"\\]*(\\.[^"\\]*)*)"/g, (m) => '<span class="st">' + m + '</span>');
+  }
+
+  return src.split('\n').map(line => {
+    const esc = escHtml(line);
+    // Preprocessor directives — whole line
+    const ppMatch = esc.match(/^(\s*)(#(?:include|define|pragma|ifndef|endif)\b.*)/);
+    if (ppMatch) {
+      return ppMatch[1] + '<span class="pp">' + ppMatch[2] + '</span>';
+    }
+    // Find first // that is outside string literals
+    let cmIdx = -1;
+    let inStr = false;
+    for (let ci = 0; ci < esc.length - 1; ci++) {
+      const ch = esc[ci];
+      if (ch === '\\' && inStr) { ci++; continue; }
+      if (ch === '"') { inStr = !inStr; continue; }
+      if (!inStr && ch === '/' && esc[ci+1] === '/') { cmIdx = ci; break; }
+    }
+    if (cmIdx !== -1) {
+      const codePart    = tagStrings(esc.slice(0, cmIdx));
+      const commentPart = esc.slice(cmIdx);
+      return highlightCode(codePart) + '<span class="cm">' + commentPart + '</span>';
+    }
+    return highlightCode(tagStrings(esc));
+  }).join('\n');
+}
+document.getElementById('cppSrc').innerHTML = highlight(CPP_SOURCE);
