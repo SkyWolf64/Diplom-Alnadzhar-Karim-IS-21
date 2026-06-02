@@ -1,0 +1,583 @@
+// ════════════════════════════════════════
+// AES-128 ДЕШИФРАЦІЯ (FIPS 197 §5.3)
+// ════════════════════════════════════════
+
+const AES_INV_SBOX = new Uint8Array([
+  0x52,0x09,0x6a,0xd5,0x30,0x36,0xa5,0x38,0xbf,0x40,0xa3,0x9e,0x81,0xf3,0xd7,0xfb,
+  0x7c,0xe3,0x39,0x82,0x9b,0x2f,0xff,0x87,0x34,0x8e,0x43,0x44,0xc4,0xde,0xe9,0xcb,
+  0x54,0x7b,0x94,0x32,0xa6,0xc2,0x23,0x3d,0xee,0x4c,0x95,0x0b,0x42,0xfa,0xc3,0x4e,
+  0x08,0x2e,0xa1,0x66,0x28,0xd9,0x24,0xb2,0x76,0x5b,0xa2,0x49,0x6d,0x8b,0xd1,0x25,
+  0x72,0xf8,0xf6,0x64,0x86,0x68,0x98,0x16,0xd4,0xa4,0x5c,0xcc,0x5d,0x65,0xb6,0x92,
+  0x6c,0x70,0x48,0x50,0xfd,0xed,0xb9,0xda,0x5e,0x15,0x46,0x57,0xa7,0x8d,0x9d,0x84,
+  0x90,0xd8,0xab,0x00,0x8c,0xbc,0xd3,0x0a,0xf7,0xe4,0x58,0x05,0xb8,0xb3,0x45,0x06,
+  0xd0,0x2c,0x1e,0x8f,0xca,0x3f,0x0f,0x02,0xc1,0xaf,0xbd,0x03,0x01,0x13,0x8a,0x6b,
+  0x3a,0x91,0x11,0x41,0x4f,0x67,0xdc,0xea,0x97,0xf2,0xcf,0xce,0xf0,0xb4,0xe6,0x73,
+  0x96,0xac,0x74,0x22,0xe7,0xad,0x35,0x85,0xe2,0xf9,0x37,0xe8,0x1c,0x75,0xdf,0x6e,
+  0x47,0xf1,0x1a,0x71,0x1d,0x29,0xc5,0x89,0x6f,0xb7,0x62,0x0e,0xaa,0x18,0xbe,0x1b,
+  0xfc,0x56,0x3e,0x4b,0xc6,0xd2,0x79,0x20,0x9a,0xdb,0xc0,0xfe,0x78,0xcd,0x5a,0xf4,
+  0x1f,0xdd,0xa8,0x33,0x88,0x07,0xc7,0x31,0xb1,0x12,0x10,0x59,0x27,0x80,0xec,0x5f,
+  0x60,0x51,0x7f,0xa9,0x19,0xb5,0x4a,0x0d,0x2d,0xe5,0x7a,0x9f,0x93,0xc9,0x9c,0xef,
+  0xa0,0xe0,0x3b,0x4d,0xae,0x2a,0xf5,0xb0,0xc8,0xeb,0xbb,0x3c,0x83,0x53,0x99,0x61,
+  0x17,0x2b,0x04,0x7e,0xba,0x77,0xd6,0x26,0xe1,0x69,0x14,0x63,0x55,0x21,0x0c,0x7d
+]);
+
+function gmul9 (x) { return (xtime(xtime(xtime(x))) ^ x) & 0xff; }
+function gmul11(x) { return (xtime(xtime(xtime(x))) ^ xtime(x) ^ x) & 0xff; }
+function gmul13(x) { return (xtime(xtime(xtime(x))) ^ xtime(xtime(x)) ^ x) & 0xff; }
+function gmul14(x) { return (xtime(xtime(xtime(x))) ^ xtime(xtime(x)) ^ xtime(x)) & 0xff; }
+
+function invSubBytes(s)  { for (let i=0;i<16;i++) s[i]=AES_INV_SBOX[s[i]]; }
+function invShiftRows(s) {
+  let t;
+  t=s[13]; s[13]=s[9]; s[9]=s[5]; s[5]=s[1]; s[1]=t;
+  t=s[2];  s[2]=s[10]; s[10]=t; t=s[6]; s[6]=s[14]; s[14]=t;
+  t=s[3];  s[3]=s[7];  s[7]=s[11]; s[11]=s[15]; s[15]=t;
+}
+function invMixColumns(s) {
+  for (let c=0;c<4;c++) {
+    const s0=s[c*4],s1=s[c*4+1],s2=s[c*4+2],s3=s[c*4+3];
+    s[c*4]  = gmul14(s0)^gmul11(s1)^gmul13(s2)^gmul9(s3);
+    s[c*4+1]= gmul9(s0) ^gmul14(s1)^gmul11(s2)^gmul13(s3);
+    s[c*4+2]= gmul13(s0)^gmul9(s1) ^gmul14(s2)^gmul11(s3);
+    s[c*4+3]= gmul11(s0)^gmul13(s1)^gmul9(s2) ^gmul14(s3);
+  }
+}
+
+/** Дешифрування одного 128-бітного блоку (FIPS 197 §5.3) */
+function aesDecryptBlock(block, key) {
+  const w = aesKeyExpansion(key);
+  for (let i=0;i<16;i++) block[i] ^= w[10][i];
+  for (let r=9;r>=1;r--) {
+    invShiftRows(block); invSubBytes(block);
+    for (let i=0;i<16;i++) block[i] ^= w[r][i];
+    invMixColumns(block);
+  }
+  invShiftRows(block); invSubBytes(block);
+  for (let i=0;i<16;i++) block[i] ^= w[0][i];
+}
+
+/** Дешифрування потоку даних блоками 128 біт (ECB mode) */
+function aesDecrypt(cipherData, key) {
+  const result = new Uint8Array(cipherData);
+  for (let i=0; i+15 < result.length; i+=16)
+    aesDecryptBlock(result.subarray(i,i+16), key);
+  return result;
+}
+
+/** Підставляє найкращий ключ ГА в поле дешифрації */
+function copyGAKeyToDecrypt() {
+  if (!allResults.length) { showMsg('Спочатку запустіть ГА — натисніть «▶ ЗАПУСТИТИ ГА».'); return; }
+  document.getElementById('decKeyInput').value = allResults[allResults.length-1].hexKey;
+}
+
+/** Підставляє повний шифротекст у поле дешифрації */
+function copyFullCipherToDecrypt() {
+  if (!lastEncryptedHex) { showMsg('Спочатку запустіть ГА або натисніть «🔍 Аналізувати» у блоці верифікації.'); return; }
+  document.getElementById('decCipherHex').value = lastEncryptedHex;
+  // Прокручуємо до блоку дешифрації
+  const el = document.getElementById('decCipherHex');
+  el.scrollIntoView({behavior:'smooth', block:'center'});
+  el.style.borderColor = 'var(--grn)';
+  setTimeout(() => { el.style.borderColor = ''; }, 1500);
+}
+
+/** Копіює повний шифротекст у буфер обміну */
+function copyFullCipherClipboard() {
+  if (!lastEncryptedHex) { showMsg('Шифротекст відсутній. Натисніть «🔍 Аналізувати» або запустіть ГА.'); return; }
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(lastEncryptedHex).then(() => {
+      const btn = event.target.closest('button');
+      const orig = btn.innerHTML;
+      btn.innerHTML = '✓ Скопійовано';
+      setTimeout(() => { btn.innerHTML = orig; }, 1500);
+    });
+  }
+}
+
+/** Підставляє шифротекст з Ciphertext Preview (оновлена версія) */
+function copyCipherToDecrypt() {
+  if (!lastEncryptedHex) {
+    showMsg('Спочатку запустіть ГА або натисніть «🔍 Аналізувати» у блоці верифікації.');
+    return;
+  }
+  copyFullCipherToDecrypt();
+}
+
+/** Виконує дешифрацію та відображає результат */
+function runDecrypt() {
+  // Очищаємо від будь-яких пробілів, переносів, крапок, тире
+  let hexCipher = document.getElementById('decCipherHex').value
+    .replace(/[\s\r\n\t…\-]/g, '').toUpperCase();
+  const hexKey  = document.getElementById('decKeyInput').value
+    .replace(/\s/g,'').toUpperCase();
+  const statusEl = document.getElementById('decStatus');
+  const resultEl = document.getElementById('decResult');
+  const outputEl = document.getElementById('decOutputText');
+
+  resultEl.style.display = 'block';
+
+  // Валідація ключа
+  if (hexKey.length !== 32 || !/^[0-9A-F]+$/.test(hexKey)) {
+    statusEl.innerHTML = '❌ Ключ має бути <b>32 HEX символи</b> (128 біт). Натисніть «Ключ з ГА».';
+    statusEl.style.color = 'var(--red)'; outputEl.value = ''; return;
+  }
+  // Валідація шифротексту
+  if (!hexCipher || !/^[0-9A-F]+$/.test(hexCipher)) {
+    statusEl.innerHTML = '❌ Шифротекст містить недопустимі символи. Використайте кнопку «⇅ У дешифрацію».';
+    statusEl.style.color = 'var(--red)'; outputEl.value = ''; return;
+  }
+  // Обрізаємо до кратного 32 (повні 16-байтні блоки)
+  const fullHexLen = Math.floor(hexCipher.length / 32) * 32;
+  if (fullHexLen === 0) {
+    statusEl.innerHTML = `❌ Шифротекст занадто короткий (${hexCipher.length} символів). Потрібно мінімум 32 HEX = 1 блок (16 байт).`;
+    statusEl.style.color = 'var(--red)'; outputEl.value = ''; return;
+  }
+  if (hexCipher.length !== fullHexLen) {
+    // Автоматично обрізаємо неповний останній блок
+    hexCipher = hexCipher.slice(0, fullHexLen);
+  }
+
+  // HEX → Uint8Array
+  const key = new Uint8Array(16);
+  for (let i=0; i<32; i+=2) key[i/2] = parseInt(hexKey.substr(i,2), 16);
+  const cipher = new Uint8Array(fullHexLen/2);
+  for (let i=0; i<fullHexLen; i+=2) cipher[i/2] = parseInt(hexCipher.substr(i,2), 16);
+
+  // Дешифрація
+  const decrypted = aesDecrypt(cipher, key);
+
+  // Декодування UTF-8 або HEX
+  let text = '', isText = true;
+  try { text = new TextDecoder('utf-8', {fatal: true}).decode(decrypted); }
+  catch {
+    isText = false;
+    text = Array.from(decrypted).map(b => b.toString(16).padStart(2,'0')).join(' ');
+  }
+
+  outputEl.value = text;
+  const blocks = cipher.length / 16;
+  statusEl.innerHTML =
+    `<span style="color:var(--grn)">✓ Дешифровано ${cipher.length} байт (${blocks} блок${blocks===1?'':'ів'})</span>` +
+    (isText ? ' — UTF-8 текст' : ' — бінарні дані (HEX)');
+  statusEl.style.color = '';
+}
+
+/** Відображає лаконічне повідомлення замість alert() */
+function showMsg(text, type = 'err', duration = 3500) {
+  const t = document.getElementById('toastMsg');
+  if (!t) return;
+  t.className = 'toast-msg ' + type;
+  t.innerHTML = {
+    err:  '❌ ',
+    warn: '⚠️ ',
+    ok:   '✓ ',
+    info: 'ℹ️ '
+  }[type] + text;
+  t.classList.add('show');
+  clearTimeout(t._tid);
+  t._tid = setTimeout(() => { t.classList.remove('show'); }, duration);
+}
+
+/** Відкриває діалог вибору файлу */
+function openFileDialog() {
+  document.getElementById('fileInput').click();
+}
+
+/** Обробляє відкритий файл (.txt/.docx/.pdf та інші текстові) */
+async function handleFileOpen(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const ext  = file.name.split('.').pop().toLowerCase();
+  const info = document.getElementById('dataSizeInfo');
+  info.textContent = '⏳ Читання...';
+  info.style.color  = 'var(--a2)';
+
+  try {
+    let text = '';
+
+    if (ext === 'pdf') {
+      // ── PDF через pdf.js ──
+      if (typeof pdfjsLib === 'undefined')
+        throw new Error('pdf.js не завантажено (потрібен інтернет)');
+      pdfjsLib.GlobalWorkerOptions.workerSrc =
+        'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';
+      const buf = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+      for (let p = 1; p <= pdf.numPages; p++) {
+        const page    = await pdf.getPage(p);
+        const content = await page.getTextContent();
+        text += content.items.map(i => i.str).join(' ') + '\n';
+      }
+      loadFileText(text, file.name, 'PDF');
+
+    } else if (ext === 'docx') {
+      // ── Word DOCX через mammoth.js ──
+      if (typeof mammoth === 'undefined')
+        throw new Error('mammoth.js не завантажено (потрібен інтернет)');
+      const buf    = await file.arrayBuffer();
+      const result = await mammoth.extractRawText({ arrayBuffer: buf });
+      loadFileText(result.value, file.name, 'DOCX');
+
+    } else {
+      // ── Будь-який текстовий файл (.txt .csv .md .json тощо) ──
+      text = await file.text();
+      loadFileText(text, file.name, ext.toUpperCase());
+    }
+  } catch (err) {
+    showMsg(err.message, 'err', 5000);
+    info.textContent = '❌ ' + err.message;
+    info.style.color  = 'var(--red)';
+  }
+  event.target.value = ''; // дозволяє відкрити той самий файл знову
+}
+
+/** Вставляє текст у редактор та оновлює всі панелі */
+function loadFileText(text, fileName, type) {
+  document.getElementById('txt').value = text;
+  checkDataSize();
+  updateCharts(text, [], []);
+  const bytes = new TextEncoder().encode(text).length;
+  const info  = document.getElementById('dataSizeInfo');
+  info.textContent = `✓ ${type}: «${fileName}» (${bytes} байт)`;
+  info.style.color  = 'var(--grn)';
+  log(`📂 Файл: ${fileName} · ${type} · ${bytes} байт`, '#06b6d4');
+}
+
+/** Очищає поля дешифрації */
+function clearDecrypt() {
+  document.getElementById('decCipherHex').value  = '';
+  document.getElementById('decKeyInput').value   = '';
+  document.getElementById('decOutputText').value = '';
+  document.getElementById('decResult').style.display = 'none';
+}
+
+/** Апроксимація функції помилок erf */
+function erf(x) {
+  const sign = x < 0 ? -1 : 1;
+  x = Math.abs(x);
+  const t  = 1 / (1 + 0.3275911 * x);
+  const y  = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t
+               - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x);
+  return sign * y;
+}
+
+/** NIST Monobit Test: перевірка рівноваги нулів та одиниць у бітовому потоці
+ *  Повертає P-value (> 0.01 = пройшов тест)
+ */
+function monobitTest(data) {
+  let sum = 0;
+  data.forEach(byte => {
+    for (let i = 0; i < 8; i++) {
+      sum += ((byte >> i) & 1) ? 1 : -1;
+    }
+  });
+  const sObs   = Math.abs(sum) / Math.sqrt(data.length * 8);
+  const pValue = 1 - erf(sObs / Math.sqrt(2));
+  return pValue;
+}
+
+
+
+/** Рахує частоти байтів, показує Top-10 у вказаному елементі */
+function updateFrequencyDisplay(data, elementId) {
+  const freqs = new Array(256).fill(0);
+  const bytes = (typeof data === 'string') ? new TextEncoder().encode(data) : data;
+  bytes.forEach(b => freqs[b]++);
+
+  // Сортуємо щоб знайти найбільш вживані (піки)
+  const sorted = freqs
+    .map((count, byte) => ({ byte, count }))
+    .filter(item => item.count > 0)
+    .sort((a, b) => b.count - a.count);
+
+  const container = document.getElementById(elementId);
+  if (!container) return;
+  container.innerHTML = sorted.slice(0, 10).map(item => {
+    const label = item.byte === 32 ? 'Space' : String.fromCharCode(item.byte).replace(/[^\x20-\x7E]/g, '·');
+    return `<div style="display:flex;justify-content:space-between;border-bottom:1px solid var(--brd);padding:2px 0;font-size:10px">
+      <span>[${item.byte}] '<span style="color:#60a5fa">${label}</span>':</span>
+      <span style="color:#60a5fa">${item.count}</span>
+    </div>`;
+  }).join('');
+
+  // Також оновлюємо компактний grid (srcFreq / cipherFreq)
+  const gridId = elementId === 'sourceFreqList' ? 'srcFreq' : elementId === 'cipherFreqList' ? 'cipherFreq' : null;
+  if (gridId) {
+    const gridEl = document.getElementById(gridId);
+    if (gridEl) {
+      gridEl.innerHTML = sorted.slice(0, 10).map(item => {
+        const label = item.byte === 32 ? 'Spc' : String.fromCharCode(item.byte).replace(/[^\x20-\x7E]/g, '·');
+        return `<span style="color:var(--mut)">[${item.byte}]</span><span style="color:#60a5fa"> ${item.count}</span>  `;
+      }).join('');
+    }
+  }
+}
+
+/** Завантажує CSV частот відкритого тексту (формат для NIST аналізу) */
+function dlSourceCSV() {
+  const text = document.getElementById('txt').value;  // правильний ID textarea
+  if (!text) { showMsg('Введіть або вставте текст у поле вхідних даних (мінімум 16 байт).'); return; }
+  const freqs = new Array(256).fill(0);
+  const bytes = new TextEncoder().encode(text);
+  bytes.forEach(b => freqs[b]++);
+
+  // Формат як на скріншоті: Byte;Frequency
+  let csv = 'Byte;Frequency\n' + freqs.map((f, i) => `${i};${f}`).join('\n');
+
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = 'source_freq.csv';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 150);
+}
+
+/** Тест чутливості ключа AES-128 (лавинний ефект по позиціях байтів) */
+function testAvalanche() {
+  const data = toBytes(document.getElementById('txt').value);
+  if (data.length < 16) {
+    showMsg('Для тесту лавинного ефекту потрібно мінімум 16 байт тексту.', 'warn');
+    return;
+  }
+  // Беремо ключ з поля або генеруємо
+  let hexIn = document.getElementById('manualKeyInput').value.replace(/\s/g, '');
+  if (hexIn.length !== 32 || !/^[0-9a-fA-F]+$/.test(hexIn)) {
+    const b = new Uint8Array(16);
+    crypto.getRandomValues(b);
+    hexIn = Array.from(b).map(x => x.toString(16).padStart(2,'0')).join('');
+    document.getElementById('manualKeyInput').value = hexIn;
+  }
+  const key1 = new Uint8Array(16);
+  for (let i = 0; i < 32; i += 2) key1[i/2] = parseInt(hexIn.substr(i, 2), 16);
+
+  const enc1 = aesCipher(data, key1);
+
+  // Для кожного байту ключа: змінюємо 1 біт і рахуємо кількість змінених бітів
+  // у відповідній позиції виходу (байт-паралельна архітектура SubBytes+AddRoundKey)
+  let totalDiffBits = 0;
+  const blockCount = Math.floor(data.length / 16);
+  const testedBytes = blockCount * 16; // повні блоки
+
+  for (let byteIdx = 0; byteIdx < 16; byteIdx++) {
+    const key2 = new Uint8Array(key1);
+    key2[byteIdx] ^= 0x01; // 1-бітна зміна у ключі
+    const enc2 = aesCipher(data, key2);
+    // Рахуємо різницю лише у позиціях byteIdx у кожному блоці
+    for (let blk = 0; blk < blockCount; blk++) {
+      let xor = enc1[blk * 16 + byteIdx] ^ enc2[blk * 16 + byteIdx];
+      while (xor) { totalDiffBits += xor & 1; xor >>= 1; }
+    }
+  }
+
+  const totalBits = blockCount * 16 * 8; // 16 байт × 8 біт × blockCount
+  const diffPct   = ((totalDiffBits / totalBits) * 100).toFixed(1);
+  const hex1short = Array.from(enc1.slice(0, 8)).map(b => b.toString(16).padStart(2,'0')).join('');
+  const isGood    = parseFloat(diffPct) >= 40;
+
+  log('─'.repeat(50), '#2d3f6e');
+  log('⚡ ТЕСТ ЧУТЛИВОСТІ КЛЮЧА AES-128', '#f59e0b');
+  log(`Ключ: ${hexIn.toUpperCase().slice(0, 16)}...  блоків: ${blockCount}`, '#06b6d4');
+  log(`Шифротекст (перші 8 байт): ${hex1short.toUpperCase()}`, '#e2e8f0');
+  log(`Для кожного з 16 байт ключа: змінено 1 біт → вимірюємо зміну виходу`, '#e2e8f0');
+  log(`Відмінних бітів у виході: ${totalDiffBits}/${totalBits} (${diffPct}%) — ідеал ~50%`,
+      isGood ? '#22d3ee' : '#f59e0b');
+  log(isGood ? '✓ Ключ має хорошу чутливість по всіх позиціях'
+              : '⚠ Чутливість нижче очікуваної (~50%)',
+      isGood ? '#22d3ee' : '#f59e0b');
+  log('─'.repeat(50), '#2d3f6e');
+
+  sw('a');
+}
+
+
+
+/** Копіює найкращий ключ ГА в поле ручного введення */
+function copyBestKey() {
+  if (!allResults.length || !allResults[allResults.length - 1].hexKey) {
+    showMsg('Ключ ГА відсутній. Спочатку запустіть «▶ ЗАПУСТИТИ ГА».');
+    return;
+  }
+  document.getElementById('manualKeyInput').value =
+    allResults[allResults.length - 1].hexKey;
+  document.getElementById('manualVerifyResult').textContent =
+    'Ключ ГА скопійовано. Змініть один символ та натисніть «Аналізувати» для демонстрації лавинного ефекту.';
+}
+
+/** Аналізує HEX-ключ введений вручну */
+function runManualVerify() {
+  const raw = document.getElementById('manualKeyInput').value.replace(/\s/g, '');
+  const res = document.getElementById('manualVerifyResult');
+  if (raw.length !== 32 || !/^[0-9a-fA-F]+$/.test(raw)) {
+    res.textContent = '❌ Ключ має бути рівно 32 HEX-символи (16 байт). Приклад: 2b7e151628aed2a6abf7158809cf4f3c';
+    res.style.color = '#ef4444';
+    return;
+  }
+  // Перетворення HEX → Uint8Array
+  const key = new Uint8Array(16);
+  for (let i = 0; i < 32; i += 2)
+    key[i/2] = parseInt(raw.substr(i, 2), 16);
+
+  const data = toBytes(document.getElementById('txt').value);
+  if (data.length < 16) {
+    res.textContent = '❌ Потрібно мінімум 16 байт у полі введення.';
+    res.style.color = '#ef4444';
+    return;
+  }
+  const enc  = aesCipher(data, key);
+  const freq = byteFrequency(enc);
+  const n    = enc.length;
+  const H    = calcEntropy(freq, n);
+  const P    = pValueFromChi2(chiSquared(freq, n));
+  const F    = W1 * H + W2 * P;
+
+  res.innerHTML =
+    `<span style="color:var(--acc)">F(X)=${F.toFixed(4)}</span> &nbsp;` +
+    `<span style="color:var(--grn)">H=${H.toFixed(4)}</span> &nbsp;` +
+    `<span style="color:var(--org)">P=${P.toFixed(4)}</span> &nbsp;` +
+    `<span style="color:var(--mut);font-size:9px">ключ: ${raw.toUpperCase()}</span>`;
+  res.style.color = '';
+
+  // Оновити індикатор складності
+  updateKeyStrength(F);
+
+  // Частотний аналіз — відкритий текст і шифротекст
+  updateFrequencyDisplay(data, 'sourceFreqList');
+  updateFrequencyDisplay(enc,  'cipherFreqList');
+
+  // Зберігаємо повний шифротекст глобально для дешифрації
+  lastEncryptedHex = Array.from(enc).map(b => b.toString(16).padStart(2,'0')).join('');
+
+  // Ciphertext Preview — перші 64 байти у HEX
+  const previewWrap = document.getElementById('ciphertextPreviewWrap');
+  const previewEl   = document.getElementById('ciphertextPreview');
+  const previewBytes = Array.from(enc.slice(0, 64))
+    .map(b => b.toString(16).padStart(2,'0'));
+  // Групуємо по 8 байт
+  let html = '';
+  for (let i = 0; i < previewBytes.length; i++) {
+    if (i > 0 && i % 8 === 0) html += ' ';
+    html += previewBytes[i];
+  }
+  previewEl.textContent = html + (enc.length > 64 ? ' …' : '');
+  previewWrap.style.display = 'block';
+
+  // Оновити частотний аналіз для шифротексту
+  updateFrequencyDisplay(data, 'sourceFreqList');
+  updateFrequencyDisplay(enc, 'cipherFreqList');
+
+  // Оновити метрики на екрані
+  updateMetrics(F, H, P);
+}
+
+/** Очищає поле вводу тексту */
+function clearText() {
+  document.getElementById('txt').value = '';
+  checkDataSize();
+
+  // Гістограма частот (Chart.js)
+  updateCharts('', [], []);
+
+  // Поточні метрики → скидаємо до нулів
+  ['mF','mH','mP'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.textContent = '0.000'; el.style.color = 'var(--mut)'; }
+  });
+  ['bF','bH','bP'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.style.width = '0%'; el.style.background = 'var(--mut)'; }
+  });
+
+  // Графік збіжності cv (canvas)
+  drawChart([], [], [], 0.9);
+
+  // Частотний аналіз (Top-10 списки)
+  ['sourceFreqList','cipherFreqList'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = '<div style="color:var(--mut);font-size:9px;padding:4px 0">— немає даних —</div>';
+  });
+  // Також очищаємо srcFreq / cipherFreq гриди якщо є
+  ['srcFreq','cipherFreq'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = '';
+  });
+
+  // Лог виконання
+  clearLog();
+
+  // Статус
+  setStatus('', '');
+
+  // lastEncryptedHex
+  lastEncryptedHex = '';
+
+  // Дані CSV для Excel
+  const csvPr = document.getElementById('csvPr');
+  if (csvPr) csvPr.textContent = '— запустіть аналіз для отримання даних —';
+}
+
+/** Генерує випадковий 128-бітний AES-ключ у HEX */
+function genRandomKey() {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  const hex = Array.from(bytes).map(b => b.toString(16).padStart(2,'0')).join('');
+  document.getElementById('manualKeyInput').value = hex;
+  document.getElementById('manualVerifyResult').textContent =
+    'Випадковий ключ згенеровано. Натисніть «Аналізувати» для оцінки.';
+  // Скидаємо застарілі дані
+  document.getElementById('keyStrengthBar').style.width = '0%';
+  document.getElementById('keyStrengthBar').style.background = 'var(--red)';
+  document.getElementById('keyStrengthLabel').textContent = '—';
+  document.getElementById('keyStrengthLabel').style.color = 'var(--mut)';
+  document.getElementById('ciphertextPreviewWrap').style.display = 'none';
+}
+
+/** Копіює поточний HEX-ключ з поля в буфер обміну */
+function copyKeyClipboard() {
+  const hex = document.getElementById('manualKeyInput').value.trim();
+  if (!hex) { showMsg('Введіть ключ (32 HEX символи = 128 біт) або натисніть «🎲 Випадковий ключ».', 'warn'); return; }
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(hex).then(() => {
+      const btn = document.getElementById('btnCopyKeyClip');
+      const orig = btn.innerHTML;
+      btn.innerHTML = '✓ Скопійовано';
+      setTimeout(() => { btn.innerHTML = orig; }, 1500);
+    });
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = hex; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+  }
+}
+
+/** Оновлює індикатор складності ключа */
+function updateKeyStrength(F) {
+  const bar   = document.getElementById('keyStrengthBar');
+  const label = document.getElementById('keyStrengthLabel');
+  const pct   = Math.round(F * 100);
+  bar.style.width = pct + '%';
+  if (F >= 0.85) {
+    bar.style.background = 'var(--grn)';
+    label.textContent = pct + '% — Сильний ключ ✓';
+    label.style.color = 'var(--grn)';
+  } else if (F >= 0.6) {
+    bar.style.background = 'var(--org)';
+    label.textContent = pct + '% — Середній ключ';
+    label.style.color = 'var(--org)';
+  } else {
+    bar.style.background = 'var(--red)';
+    label.textContent = pct + '% — Слабкий ключ ✗';
+    label.style.color = 'var(--red)';
+  }
+}
+
+
+function clearResults() {
+  allResults = [];
+  document.getElementById('rtb').innerHTML =
+    '<tr><td colspan="8" style="text-align:center;color:var(--mut);padding:28px">Таблицю очищено — запустіть новий сценарій</td></tr>';
+  document.getElementById('csvPr').textContent = '— запустіть аналіз для отримання даних —';
+}
